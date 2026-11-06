@@ -3,7 +3,7 @@ import { CONSTANTS } from '../shared/constants.ts';
 import { TILES } from '../shared/board.ts';
 import { CARDS, cardById, type CardDef, type DeckId } from '../shared/cards.ts';
 import { formatRupees } from '../shared/design.ts';
-import { credit, pay } from './money.ts';
+import { credit, pay, charge, payUpTo } from './money.ts';
 import { ownedTiles } from './rent.ts';
 import type { GameState, Rng } from './types.ts';
 
@@ -62,13 +62,12 @@ export function applyCard(state: GameState, seat: number, card: CardDef, landing
     }
     case 'collectFromEach': {
       let s = state; let note = '';
-      for (const o of others) { const r = pay(s, o, seat, e.amount); s = r.state; note += r.note; }
+      for (const o of others) { const r = payUpTo(s, o, seat, e.amount); s = r.state; note += r.note; }
       return { state: s, note: ` +${formatRupees(e.amount)} from each other player.${note}` };
     }
     case 'payEach': {
-      let s = state; let note = '';
-      for (const o of others) { const r = pay(s, seat, o, e.amount); s = r.state; note += r.note; }
-      return { state: s, note: ` -${formatRupees(e.amount)} to each other player.${note}` };
+      const r = charge(state, seat, others.map((o) => ({ to: o, amount: e.amount })), 'a card');
+      return { state: r.state, note: ` -${formatRupees(e.amount)} to each other player.${r.note}` };
     }
     case 'payPerBuilding': {
       const total = owned.reduce((sum, t) => sum + state.properties[t].houses * e.house + (state.properties[t].hotel ? e.hotel : 0), 0);

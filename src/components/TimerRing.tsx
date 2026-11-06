@@ -1,8 +1,8 @@
-// Placeholder ring; real countdown arrives with the timers (stages 3 and 7).
-export default function TimerRing({ seconds, total }: { seconds: number; total: number }) {
-  const pct = Math.round((seconds / total) * 100);
+// Countdown ring. `big` is for auctions and trades, readable from across a room.
+export default function TimerRing({ seconds, total, big }: { seconds: number; total: number; big?: boolean }) {
+  const pct = Math.max(0, Math.min(100, Math.round((seconds / total) * 100)));
   return (
-    <div className="timer" style={{ ['--pct' as string]: `${pct}%` }} role="timer" aria-label={`${seconds} seconds left`}>
+    <div className={`timer ${big ? 'timer--big' : ''}`} style={{ ['--pct' as string]: `${pct}%` }} role="timer" aria-label={`${seconds} seconds left`}>
       <span>{seconds}</span>
     </div>
   );

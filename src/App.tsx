@@ -16,7 +16,7 @@ export default function App() {
 
   if (screen.name === 'game') {
     const seats = Array.from({ length: screen.count }, (_, i) => ({ name: `Player ${i + 1}`, token: TOKENS[i] }));
-    return <GameScreen seats={seats} startingCash={screen.cash} onBack={() => setScreen({ name: 'home' })} />;
+    return <GameScreen seats={seats} startingCash={screen.cash} endMode={{ kind: 'lastStanding' }} onBack={() => setScreen({ name: 'home' })} />;
   }
   if (screen.name === 'setup') {
     return (

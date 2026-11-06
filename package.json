@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "check": "node --experimental-strip-types scripts/check-constants.ts && node --experimental-strip-types scripts/check-board.ts && node --experimental-strip-types scripts/check-engine.ts && node --experimental-strip-types scripts/check-cards.ts"
+    "check": "node --experimental-strip-types scripts/check-constants.ts && node --experimental-strip-types scripts/check-board.ts && node --experimental-strip-types scripts/check-engine.ts && node --experimental-strip-types scripts/check-cards.ts && node --experimental-strip-types scripts/check-auction.ts && node --experimental-strip-types scripts/check-endgame.ts"
   },
   "dependencies": {
     "react": "^18.3.1",

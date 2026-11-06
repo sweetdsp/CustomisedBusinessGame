@@ -103,7 +103,7 @@ const mortLand = roll(own(at(base, 0), 1, ['Ramappa'], { mortgaged: true }), fix
 eq(mortLand.state.players[0].cash === 200000 && mortLand.state.players[1].cash === 200000, 'no rent on mortgaged place');
 const broke = { ...rentG, players: rentG.players.map((p, i) => (i === 0 ? { ...p, cash: 150 } : p)) };
 const brokeR = roll(broke, fixed(1, 2));
-eq(brokeR.state.players[0].cash === 0 && brokeR.state.players[1].cash === 200150, 'cannot pay: pays all remaining cash, stops at 0');
+eq(brokeR.state.players[0].cash === 150 && brokeR.state.debt?.seat === 0 && brokeR.state.debt.owed[0].to === 1 && brokeR.state.debt.owed[0].amount === 400, 'cannot pay: a debt opens (full rules in check-endgame)');
 
 // taxes and bonus
 const toTile = (g: GameState, from: number, a: number, b: number) => roll(at(g, from), fixed(a, b)).state;

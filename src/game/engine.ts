@@ -6,13 +6,19 @@ import { rollDice } from './dice.ts';
 import { rentFor, luxuryTax, touristTax } from './rent.ts';
 import { pay } from './money.ts';
 import { shuffleDecks, drawCard, applyCard } from './cards.ts';
-import type { GameState, Player, PropertyState, Rng, RollResult } from './types.ts';
+import { startAuction } from './auction.ts';
+import { passTurn } from './endgame.ts';
+import { cardById } from '../shared/cards.ts';
+import type { EndMode, GameState, Player, PropertyState, Rng, RollResult } from './types.ts';
 
 type Landed = { state: GameState; note: string; path?: number[] };
 
-export function newGame(seats: { name: string; token: string }[], startingCash: number, rng: Rng): GameState {
+export function newGame(
+  seats: { name: string; token: string; ai?: Player['ai'] }[], startingCash: number, rng: Rng,
+  options: { endMode?: EndMode; now?: number } = {},
+): GameState {
   const players: Player[] = seats.map((s) => ({
-    ...s, cash: startingCash, position: CONSTANTS.START_TILE, inJail: false, bankrupt: false, heldCards: [],
+    ...s, cash: startingCash, position: CONSTANTS.START_TILE, inJail: false, bankrupt: false, heldCards: [], jailTurns: 0, connected: true, missedTurns: 0, droppedRounds: 0,
   }));
   const properties: Record<number, PropertyState> = {};
   for (const t of TILES) if (t.kind === 'property') properties[t.index] = { owner: null, mortgaged: false, houses: 0, hotel: false };
@@ -20,6 +26,8 @@ export function newGame(seats: { name: string; token: string }[], startingCash: 
   return {
     players, current, phase: 'awaitRoll', doublesCount: 0, extraTurn: false,
     startingCash, lapSalary: CONSTANTS.LAP_SALARY[startingCash], properties, buildTile: null, decks: shuffleDecks(rng),
+    now: options.now ?? 0, auction: null, auctionQueue: [], trade: null, tradesThisTurn: 0, debt: null,
+    endMode: options.endMode ?? { kind: 'lastStanding' }, startedAt: options.now ?? 0, gameOver: null,
     message: `${players[current].name} goes first`,
   };
 }
@@ -33,7 +41,10 @@ function resolveLanding(state: GameState, seat: number): Landed {
       const ps = state.properties[tile.index];
       if (ps.owner === null) {
         if (me.cash >= def!.price) return { state: { ...state, phase: 'awaitBuy' }, note: `${tile.name} is for sale at ${formatRupees(def!.price)}.` };
-        return { state, note: `${tile.name} costs ${formatRupees(def!.price)}, more than ${me.name} has. It stays unowned (auctions come in stage 7).` };
+        {
+          const a = startAuction(state, tile.index);
+          return { state: a.state, note: `${tile.name} costs ${formatRupees(def!.price)}, more than ${me.name} has. ${a.started ? 'It goes to auction!' : 'Nobody can bid, so it stays unowned.'}` };
+        }
       }
       if (ps.owner === seat) return { state: { ...state, buildTile: tile.index }, note: `${tile.name} is yours. You may build here.` };
       const rent = rentFor(state, tile.index);
@@ -83,37 +94,86 @@ export function roll(state: GameState, rng: Rng): { state: GameState; result: Ro
   const dice = rollDice(rng);
   const total = dice[0] + dice[1];
   const isDouble = dice[0] === dice[1];
-  const doublesCount = isDouble ? state.doublesCount + 1 : 0;
   const seat = state.current;
   const me = state.players[seat];
   const head = `${me.name} rolled ${dice[0]} + ${dice[1]} = ${total}.`;
+  const wasInJail = me.inJail;
+  let work: GameState = state;
+  let jailNote = '';
+
+  if (wasInJail) {
+    if (!isDouble) {
+      const failed = me.jailTurns + 1;
+      if (failed < CONSTANTS.JAIL_MAX_TURNS) {
+        // Stays in Jail, turn ends.
+        const result: RollResult = { dice, total, isDouble, path: [], salaryPaid: 0, toJail: false };
+        const players = state.players.map((p, i) => (i === seat ? { ...p, jailTurns: failed } : p));
+        return { result, state: { ...state, players, phase: 'awaitEnd', doublesCount: 0, extraTurn: false, lastRoll: result, buildTile: null, lastCard: undefined, message: `${head} No double: ${me.name} stays in Jail (${failed} of ${CONSTANTS.JAIL_MAX_TURNS}).` } };
+      }
+      // Third failed turn: pay the fine now, then move by the total.
+      const f = pay(state, seat, null, CONSTANTS.JAIL_FINE);
+      work = f.state;
+      jailNote = ` Third turn in Jail: fine ${formatRupees(CONSTANTS.JAIL_FINE)} paid.${f.note}`;
+    } else {
+      jailNote = ' Doubles: out of Jail!';
+    }
+    work = { ...work, players: work.players.map((p, i) => (i === seat ? { ...p, inJail: false, jailTurns: 0 } : p)) };
+  }
+
+  // A double rolled to leave Jail gives no extra turn, and does not count toward three doubles.
+  const countsAsDouble = isDouble && !wasInJail;
+  const doublesCount = countsAsDouble ? state.doublesCount + 1 : 0;
 
   if (doublesCount === CONSTANTS.DOUBLES_TO_JAIL) {
     // Third double in a row: no move along the board, straight to Jail, no salary, turn ends.
     const result: RollResult = { dice, total, isDouble, path: [], salaryPaid: 0, toJail: true };
-    const players = state.players.map((p, i) => (i === seat ? { ...p, position: CONSTANTS.JAIL_TILE, inJail: true } : p));
+    const players = work.players.map((p, i) => (i === seat ? { ...p, position: CONSTANTS.JAIL_TILE, inJail: true, jailTurns: 0 } : p));
     return {
       result,
-      state: { ...state, players, phase: 'awaitEnd', doublesCount, extraTurn: false, lastRoll: result, buildTile: null, message: `${head} Three doubles: straight to Jail!` },
+      state: { ...work, players, phase: 'awaitEnd', doublesCount, extraTurn: false, lastRoll: result, buildTile: null, message: `${head} Three doubles: straight to Jail!` },
     };
   }
 
+  const here = work.players[seat];
   const path: number[] = [];
   let laps = 0;
   for (let i = 1; i <= total; i++) {
-    const tile = (me.position + i) % CONSTANTS.TILE_COUNT;
+    const tile = (here.position + i) % CONSTANTS.TILE_COUNT;
     path.push(tile);
     if (tile === CONSTANTS.START_TILE) laps++; // crossing or landing on Start, once each
   }
   const salaryPaid = laps * state.lapSalary;
   const result: RollResult = { dice, total, isDouble, path, salaryPaid, toJail: false };
-  const players = state.players.map((p, i) => (i === seat ? { ...p, position: path[path.length - 1], cash: p.cash + salaryPaid } : p));
-  const base: GameState = { ...state, players, phase: 'awaitEnd', doublesCount, extraTurn: isDouble, lastRoll: result, buildTile: null };
+  const players = work.players.map((p, i) => (i === seat ? { ...p, position: path[path.length - 1], cash: p.cash + salaryPaid } : p));
+  const base: GameState = { ...work, players, phase: 'awaitEnd', doublesCount, extraTurn: countsAsDouble, lastRoll: result, buildTile: null };
   const landed = resolveLanding({ ...base, lastCard: undefined }, seat);
   if (landed.path) result.cardPath = landed.path;
   const salary = salaryPaid ? ` Salary +${formatRupees(salaryPaid)}!` : '';
   const dbl = landed.state.extraTurn ? ' Doubles: roll again after ending the turn.' : '';
-  return { result, state: { ...landed.state, message: `${head}${salary} ${landed.note}${dbl}` } };
+  return { result, state: { ...landed.state, message: `${head}${jailNote}${salary} ${landed.note}${dbl}` } };
+}
+
+// Jail turn choices before rolling (section 31): pay the fine, or use a Get Out of Jail Free card, then roll and move normally.
+export function payJailFine(state: GameState): GameState {
+  const me = state.players[state.current];
+  if (!me.inJail || state.phase !== 'awaitRoll') throw new Error('Not in Jail');
+  if (me.cash < CONSTANTS.JAIL_FINE) throw new Error(`Needs ${formatRupees(CONSTANTS.JAIL_FINE)}`);
+  const r = pay(state, state.current, null, CONSTANTS.JAIL_FINE);
+  return { ...r.state, players: r.state.players.map((p, i) => (i === state.current ? { ...p, inJail: false, jailTurns: 0 } : p)), message: `${me.name} paid the ${formatRupees(CONSTANTS.JAIL_FINE)} fine and is out of Jail. Roll!` };
+}
+
+export function useJailCard(state: GameState): GameState {
+  const me = state.players[state.current];
+  if (!me.inJail || state.phase !== 'awaitRoll') throw new Error('Not in Jail');
+  if (me.heldCards.length === 0) throw new Error('No Get Out of Jail Free card');
+  const [card, ...rest] = me.heldCards;
+  const deck = cardById(card).deck;
+  return {
+    ...state,
+    decks: { ...state.decks, [deck]: [...state.decks[deck], card] }, // returns to the bottom of its deck
+    players: state.players.map((p, i) => (i === state.current ? { ...p, inJail: false, jailTurns: 0, heldCards: rest } : p)),
+    message: `${me.name} used a Get Out of Jail Free card. Roll!`,
+  };
 }
 
 export function buy(state: GameState): GameState {
@@ -133,9 +193,10 @@ export function buy(state: GameState): GameState {
 
 export function decline(state: GameState): GameState {
   if (state.phase !== 'awaitBuy') throw new Error('Nothing to decline');
-  const tile = TILES[state.players[state.current].position];
-  // Interim (until stage 7): a declined place stays unowned instead of going to auction.
-  return { ...state, phase: 'awaitEnd', message: `${state.players[state.current].name} passed on ${tile.name}. It stays unowned (auctions come in stage 7).` };
+  const me = state.players[state.current];
+  const tile = TILES[me.position];
+  const a = startAuction(state, tile.index);
+  return { ...a.state, phase: 'awaitEnd', message: `${me.name} passed on ${tile.name}. ${a.started ? 'It goes to auction!' : 'Nobody can bid, so it stays unowned.'}` };
 }
 
 export function endTurn(state: GameState): GameState {
@@ -143,10 +204,5 @@ export function endTurn(state: GameState): GameState {
   if (state.extraTurn) {
     return { ...state, phase: 'awaitRoll', extraTurn: false, buildTile: null, lastCard: undefined, message: `${state.players[state.current].name} rolls again!` };
   }
-  let next = state.current;
-  do next = (next + 1) % state.players.length; while (state.players[next].bankrupt); // skip bankrupt players
-  return {
-    ...state, current: next, phase: 'awaitRoll', doublesCount: 0, extraTurn: false, buildTile: null, lastCard: undefined,
-    message: `${state.players[next].name}'s turn`,
-  };
+  return passTurn(state);
 }
