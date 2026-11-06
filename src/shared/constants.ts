@@ -97,6 +97,12 @@ export const CONSTANTS = {
   // Computer (section 33), seconds
   COMPUTER_PAUSE_MIN: 1,
   COMPUTER_PAUSE_MAX: 2,
+  // Computer players (section 16). Builder defaults for the owner to tune: the spec gives the style, not the numbers.
+  AI_CASH_RESERVE: { Easy: 0, Medium: 20000, High: 40000 } as Record<string, number>,
+  AI_BID_LIMIT_FACTOR: { Easy: 1.3, Medium: 1.0, High: 0.85 } as Record<string, number>,
+  AI_SET_BONUS_FACTOR: 0.35, // extra bid room (Medium and High) for a place in a state they already hold
+  AI_TRADE_ACCEPT_RATIO: { Easy: 0.8, Medium: 1.0, High: 1.3 } as Record<string, number>,
+  AI_JAIL_PAY_CASH_MULTIPLE: { Easy: 1, Medium: 3, High: 5 } as Record<string, number>, // pays the fine when cash is this many fines
   // Cleanup (section 35)
   CLEANUP_HOURS: 24,
 } as const;

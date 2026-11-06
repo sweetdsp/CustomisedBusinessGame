@@ -102,3 +102,10 @@
 .podium__step span { font-size: 56px; }
 .clock { text-align: center; font: 800 20px var(--font-display); color: var(--maroon); }
 .confirm { background: #fff; border: 3px solid #a00; border-radius: var(--radius-md); padding: var(--space-sm); text-align: center; }
+
+.setup h3 { margin: var(--space-md) 0 var(--space-sm); color: var(--maroon); font-family: var(--font-display); }
+.setup__seats { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-md); text-align: left; }
+.setup__seat { background: #fff; border: 3px solid var(--gold); border-radius: var(--radius-md); padding: var(--space-sm) var(--space-md); display: flex; flex-direction: column; gap: 8px; }
+.setup__seat select, .setup__seat input { min-height: 44px; font: 600 17px var(--font-body); border: 2px solid var(--gold); border-radius: 10px; padding: 0 10px; }
+.setup__tokens { display: flex; flex-wrap: wrap; gap: 6px; }
+.setup__tokens .chip { font-size: 24px; }

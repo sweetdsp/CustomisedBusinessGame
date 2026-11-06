@@ -45,15 +45,16 @@ export default function GameScreen({ seats, startingCash, endMode, onBack }: {
       .map(([i, p]) => [i, { token: state.players[p.owner!].token, color: SEAT_COLORS[p.owner!], mortgaged: p.mortgaged, houses: p.houses, hotel: p.hotel }]),
   );
   const price = propertyOf(TILES[cur.position])?.price ?? 0;
-  const overlay = !!(state.auction || state.trade || state.debt);
+  const aiTurn = !!cur.ai;
+  const overlay = !!(state.auction || state.trade || state.debt) || aiTurn;
   const buying = state.phase === 'awaitBuy' && !g.busy && !overlay;
   const buildCheck = checkBuild(state);
   const canBuild = buildCheck.ok && !g.busy && !overlay;
   const canRoll = state.phase === 'awaitRoll' && !g.busy && !overlay;
   const canEnd = state.phase === 'awaitEnd' && !g.busy && !overlay;
   const canTrade = (state.phase === 'awaitRoll' || state.phase === 'awaitEnd') && !g.busy && !overlay && state.tradesThisTurn < CONSTANTS.TRADES_PER_TURN;
-  const tradeWhy = canTrade ? undefined : overlay ? 'Wait for the auction or trade' : state.tradesThisTurn >= CONSTANTS.TRADES_PER_TURN ? 'Three trades already this turn' : g.busy ? 'Moving...' : 'Finish buying first';
-  const rollWhy = canRoll ? undefined : overlay ? 'Auction or trade open' : g.busy ? 'Moving...' : 'Already rolled';
+  const tradeWhy = canTrade ? undefined : aiTurn ? `${cur.name} is playing` : overlay ? 'Wait for the auction or trade' : state.tradesThisTurn >= CONSTANTS.TRADES_PER_TURN ? 'Three trades already this turn' : g.busy ? 'Moving...' : 'Finish buying first';
+  const rollWhy = canRoll ? undefined : aiTurn ? `${cur.name} is thinking...` : overlay ? 'Auction or trade open' : g.busy ? 'Moving...' : 'Already rolled';
 
   return (
     <>
@@ -65,7 +66,7 @@ export default function GameScreen({ seats, startingCash, endMode, onBack }: {
         {state.players.map((p, i) => (
           <PlayerCard key={i} player={{ name: p.name, token: p.token, cash: p.cash, places: ownedTiles(state, i).length, jailCards: p.heldCards.length, level: p.ai }} active={i === state.current} />
         ))}
-        <PlacesList state={state} disabled={g.busy || !!(state.auction || state.trade)} onMortgage={g.doMortgage} onUnmortgage={g.doUnmortgage} onSell={g.doSell} />
+        <PlacesList state={state} disabled={g.busy || !!(state.auction || state.trade) || aiTurn} onMortgage={g.doMortgage} onUnmortgage={g.doUnmortgage} onSell={g.doSell} />
       </aside>
       <div className="game__board">
         <Board tokens={tokens} owners={owners}>
