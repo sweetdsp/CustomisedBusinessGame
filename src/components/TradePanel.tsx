@@ -3,10 +3,10 @@ import { describeBundle } from '../game/trade.ts';
 import type { GameState } from '../game/types.ts';
 import TimerRing from './TimerRing.tsx';
 
-interface Props { state: GameState; now: number; onAnswer: (accept: boolean) => void }
+interface Props { state: GameState; now: number; canAnswer: boolean; onAnswer: (accept: boolean) => void }
 
 // Big message and countdown while a trade waits for an answer.
-export default function TradePanel({ state, now, onAnswer }: Props) {
+export default function TradePanel({ state, now, canAnswer, onAnswer }: Props) {
   const t = state.trade!;
   const left = Math.max(0, Math.ceil((t.endsAt - now) / 1000));
   const from = state.players[t.from], to = state.players[t.to];
@@ -20,7 +20,7 @@ export default function TradePanel({ state, now, onAnswer }: Props) {
           <div className="trade__line"><b>Wants:</b> {describeBundle(t.get)}</div>
         </div>
       </div>
-      {!to.ai && (
+      {canAnswer && (
         <div className="auction__buttons">
           <button className="btn btn--bid" onClick={() => onAnswer(true)}>✅ {to.name}: Accept</button>
           <button className="btn btn--bid" onClick={() => onAnswer(false)}>❌ Decline</button>

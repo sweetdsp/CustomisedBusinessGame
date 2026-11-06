@@ -12,7 +12,8 @@ export interface Player {
   ai?: 'Easy' | 'Medium' | 'High'; // computer players only
   connected: boolean; // online play: false while a human has dropped
   missedTurns: number; // consecutive turns that timed out
-  droppedRounds: number; // rounds since the player dropped (online play)
+  droppedRounds: number; // turns skipped since the player dropped (online play)
+  replaced?: boolean; // a computer took over this seat after three rounds away
 }
 
 export type Bundle = { cash: number; tiles: number[]; cards: string[] };
@@ -86,6 +87,8 @@ export interface GameState {
   endMode: EndMode;
   startedAt: number;
   gameOver: GameOver | null;
+  turnEndsAt: number | null; // online play: when the 10 second turn timer runs out
+  turnTimedOut: boolean; // this turn has already timed out once
   lastRoll?: RollResult;
   message: string;
 }

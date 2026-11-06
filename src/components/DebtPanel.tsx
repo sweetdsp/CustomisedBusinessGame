@@ -5,7 +5,7 @@ import type { GameState } from '../game/types.ts';
 import TimerRing from './TimerRing.tsx';
 
 // Shown while a player has to raise money (30 seconds), then bankruptcy.
-export default function DebtPanel({ state, now, onBankrupt }: { state: GameState; now: number; onBankrupt: (seat: number) => void }) {
+export default function DebtPanel({ state, now, canAct, onBankrupt }: { state: GameState; now: number; canAct: boolean; onBankrupt: (seat: number) => void }) {
   const d = state.debt!;
   const left = Math.max(0, Math.ceil((d.endsAt - now) / 1000));
   const p = state.players[d.seat];
@@ -20,7 +20,7 @@ export default function DebtPanel({ state, now, onBankrupt }: { state: GameState
           <div className="trade__line">Mortgage places or sell buildings (left list), or go bankrupt.</div>
         </div>
       </div>
-      {!p.ai && (
+      {canAct && (
         <div className="auction__buttons">
           <button className="btn btn--bid" onClick={() => onBankrupt(d.seat)}>🏳️ {p.name}: I'm bankrupt</button>
         </div>

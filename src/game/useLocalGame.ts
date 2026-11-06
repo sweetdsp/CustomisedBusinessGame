@@ -5,12 +5,13 @@ import { newGame } from './engine.ts';
 import { applyAction, type Action } from './actions.ts';
 import { nextComputerMove } from './ai.ts';
 import { CONSTANTS } from '../shared/constants.ts';
+import { helpers, type GameController } from './controller.ts';
 import type { EndMode, GameState, RollResult } from './types.ts';
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 type Seat = { name: string; token: string; ai?: 'Easy' | 'Medium' | 'High' };
 
-export function useLocalGame(seats: Seat[], startingCash: number, endMode: EndMode) {
+export function useLocalGame(seats: Seat[], startingCash: number, endMode: EndMode): GameController {
   const [state, setStateRaw] = useState<GameState>(() => newGame(seats, startingCash, Math.random, { endMode, now: Date.now() }));
   const ref = useRef(state);
   const setState = (s: GameState) => { ref.current = s; setStateRaw(s); };
@@ -94,16 +95,9 @@ export function useLocalGame(seats: Seat[], startingCash: number, endMode: EndMo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, busy, retry]);
 
-  const cur = () => ref.current.current;
   return {
     state, busy, rolling, shownDice, shownPos, message, now, act,
-    doRoll: () => act(cur(), { type: 'roll' }),
-    doEndTurn: () => act(cur(), { type: 'endTurn' }),
-    doBuy: () => act(cur(), { type: 'buy' }),
-    doDecline: () => act(cur(), { type: 'decline' }),
-    doBuild: () => act(cur(), { type: 'build' }),
-    doMortgage: (tile: number) => act(cur(), { type: 'mortgage', tile }),
-    doUnmortgage: (tile: number) => act(cur(), { type: 'unmortgage', tile }),
-    doSell: (tile: number) => act(cur(), { type: 'sell', tile }),
+    mySeats: null, chat: null, fatal: null,
+    ...helpers(act, () => ref.current.current),
   };
 }

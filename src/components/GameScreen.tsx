@@ -15,23 +15,24 @@ import TradeModal from './TradeModal.tsx';
 import DebtPanel from './DebtPanel.tsx';
 import NetWorthModal from './NetWorthModal.tsx';
 import ResultsScreen from './ResultsScreen.tsx';
-import { useLocalGame } from '../game/useLocalGame.ts';
+import Effects from './Effects.tsx';
+import MuteButton from './MuteButton.tsx';
+import type { GameController } from '../game/controller.ts';
 import { CONSTANTS } from '../shared/constants.ts';
 import { TILES, propertyOf } from '../shared/board.ts';
 import { SEAT_COLORS, formatRupees } from '../shared/design.ts';
 import { ownedTiles } from '../game/rent.ts';
 import { checkBuild } from '../game/build.ts';
 import { gameDeadline } from '../game/endgame.ts';
-import type { EndMode } from '../game/types.ts';
 
-export default function GameScreen({ seats, startingCash, endMode, onBack }: {
-  seats: { name: string; token: string; ai?: 'Easy' | 'Medium' | 'High' }[]; startingCash: number; endMode: EndMode; onBack: () => void;
-}) {
-  const g = useLocalGame(seats, startingCash, endMode);
+export default function GameScreen({ g, onBack }: { g: GameController; onBack: () => void }) {
   const { state } = g;
+  // Which seats may this screen play for? Local play: every human seat. Online: only your own.
+  const mine = (seat: number) => (g.mySeats === null ? !state.players[seat].ai : g.mySeats.includes(seat));
   const [tradeOpen, setTradeOpen] = useState(false);
   const [worthOpen, setWorthOpen] = useState(false);
   const [confirmSeat, setConfirmSeat] = useState<number | null>(null);
+  if (g.fatal) return <main className="home"><h1>⚠️ Session broken</h1><p>{g.fatal}</p><button className="btn" onClick={onBack}>Back to start</button></main>;
   if (state.gameOver) return <ResultsScreen state={state} onHome={onBack} />;
   const cur = state.players[state.current];
   const deadline = gameDeadline(state);
@@ -45,7 +46,7 @@ export default function GameScreen({ seats, startingCash, endMode, onBack }: {
       .map(([i, p]) => [i, { token: state.players[p.owner!].token, color: SEAT_COLORS[p.owner!], mortgaged: p.mortgaged, houses: p.houses, hotel: p.hotel }]),
   );
   const price = propertyOf(TILES[cur.position])?.price ?? 0;
-  const aiTurn = !!cur.ai;
+  const aiTurn = !mine(state.current);
   const overlay = !!(state.auction || state.trade || state.debt) || aiTurn;
   const buying = state.phase === 'awaitBuy' && !g.busy && !overlay;
   const buildCheck = checkBuild(state);
@@ -54,7 +55,7 @@ export default function GameScreen({ seats, startingCash, endMode, onBack }: {
   const canEnd = state.phase === 'awaitEnd' && !g.busy && !overlay;
   const canTrade = (state.phase === 'awaitRoll' || state.phase === 'awaitEnd') && !g.busy && !overlay && state.tradesThisTurn < CONSTANTS.TRADES_PER_TURN;
   const tradeWhy = canTrade ? undefined : aiTurn ? `${cur.name} is playing` : overlay ? 'Wait for the auction or trade' : state.tradesThisTurn >= CONSTANTS.TRADES_PER_TURN ? 'Three trades already this turn' : g.busy ? 'Moving...' : 'Finish buying first';
-  const rollWhy = canRoll ? undefined : aiTurn ? `${cur.name} is thinking...` : overlay ? 'Auction or trade open' : g.busy ? 'Moving...' : 'Already rolled';
+  const rollWhy = canRoll ? undefined : aiTurn ? `${cur.name} is playing` : overlay ? 'Auction or trade open' : g.busy ? 'Moving...' : 'Already rolled';
 
   return (
     <>
@@ -64,16 +65,16 @@ export default function GameScreen({ seats, startingCash, endMode, onBack }: {
     <div className="game">
       <aside className="game__players">
         {state.players.map((p, i) => (
-          <PlayerCard key={i} player={{ name: p.name, token: p.token, cash: p.cash, places: ownedTiles(state, i).length, jailCards: p.heldCards.length, level: p.ai }} active={i === state.current} />
+          <PlayerCard key={i} seat={i} player={{ name: p.name, token: p.token, cash: p.cash, places: ownedTiles(state, i).length, jailCards: p.heldCards.length, level: p.ai }} active={i === state.current} />
         ))}
         <PlacesList state={state} disabled={g.busy || !!(state.auction || state.trade) || aiTurn} onMortgage={g.doMortgage} onUnmortgage={g.doUnmortgage} onSell={g.doSell} />
       </aside>
       <div className="game__board">
         <Board tokens={tokens} owners={owners}>
           <CenterPanel>
-            {state.debt ? <DebtPanel state={state} now={g.now} onBankrupt={(seat) => g.act(seat, { type: 'bankrupt' })} />
-              : state.auction ? <AuctionPanel state={state} now={g.now} onBid={(seat, step) => g.act(seat, { type: 'bid', step })} />
-              : state.trade ? <TradePanel state={state} now={g.now} onAnswer={(accept) => g.act(state.trade!.to, { type: 'answerTrade', accept })} />
+            {state.debt ? <DebtPanel state={state} now={g.now} canAct={mine(state.debt.seat)} onBankrupt={(seat) => g.act(seat, { type: 'bankrupt' })} />
+              : state.auction ? <AuctionPanel state={state} now={g.now} canBid={mine} onBid={(seat, step) => g.act(seat, { type: 'bid', step })} />
+              : state.trade ? <TradePanel state={state} now={g.now} canAnswer={mine(state.trade.to)} onAnswer={(accept) => g.act(state.trade!.to, { type: 'answerTrade', accept })} />
               : (<>
                 <Banner>{g.message}</Banner>
                 {state.lastCard && !g.busy ? <CardReveal deck={state.lastCard.deck} id={state.lastCard.id} /> : <Dice values={g.shownDice} rolling={g.rolling} />}
@@ -105,18 +106,20 @@ export default function GameScreen({ seats, startingCash, endMode, onBack }: {
         )}
         <Button icon="📊" onClick={() => setWorthOpen(true)}>Net worth</Button>
         <Button primary={canEnd} icon="⏭️" onClick={g.doEndTurn} disabledReason={canEnd ? undefined : 'Roll first'}>End Turn</Button>
-        <ChatBox />
+        <ChatBox chat={g.chat} />
         {confirmSeat !== null ? (
           <div className="confirm">
             <p><b>{state.players[confirmSeat].name}</b>: leave the game? This is final.</p>
             <button className="btn" onClick={() => { g.act(confirmSeat, { type: 'bankrupt' }); setConfirmSeat(null); }}>Yes, I'm bankrupt</button>
             <button className="btn" onClick={() => setConfirmSeat(null)}>No, keep playing</button>
           </div>
-        ) : state.players.map((p, i) => (p.bankrupt || p.ai ? null : (
+        ) : state.players.map((p, i) => (p.bankrupt || !mine(i) ? null : (
           <button key={i} className="link" onClick={() => setConfirmSeat(i)}>🏳️ {p.name}: I'm bankrupt and exiting</button>
         )))}
         <button className="link" onClick={onBack}>← Back</button>
       </aside>
+      <Effects state={state} />
+      <MuteButton />
       {worthOpen && <NetWorthModal state={state} onClose={() => setWorthOpen(false)} />}
       {tradeOpen && (
         <TradeModal state={state} onClose={() => setTradeOpen(false)}

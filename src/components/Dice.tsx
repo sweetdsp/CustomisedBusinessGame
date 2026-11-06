@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { CONSTANTS } from '../shared/constants.ts';
+import { sound } from '../shared/sound.ts';
 
 // Tumbling dice: random faces flicker while rolling, then settle on the real numbers.
 export default function Dice({ values, rolling }: { values: [number, number] | null; rolling: boolean }) {
   const [flicker, setFlicker] = useState<[number, number]>([1, 2]);
   useEffect(() => {
     if (!rolling) return;
+    sound.dice();
     const id = setInterval(() => {
       const f = () => Math.floor(Math.random() * (CONSTANTS.DICE_MAX_FACE + 1));
       setFlicker([f(), f()]);

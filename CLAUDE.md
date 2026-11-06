@@ -3,27 +3,26 @@
 Browser board game (towns of 5 southern Indian states). Spec: the owner's Requirements Document.
 
 ## Stack
-Vite + React + TypeScript on Vercel free tier. Later: Supabase free tier as referee (server-side rules).
-Game rules go in pure TS modules (no UI imports) so they can run server-side.
+Vite + React + TypeScript on Vercel free tier. Online: Supabase free tier (edge function = referee, Realtime = live updates).
+Game rules are pure TS (no UI imports) so the same code runs in the browser tests and on the server.
 
 ## Layout
-- src/shared/constants.ts  all game numbers (single source)
-- src/shared/design.ts + design.css  colors, fonts, spacing, timings
-- src/shared/types.ts, board.ts (42 tiles, grid layout), cards.ts (32 cards)
-- src/game/  pure rules (engine.ts, rent.ts, build.ts, cards.ts, money.ts, dice.ts, types.ts) + useLocalGame.ts hook
-- src/components/  Tile, Board, PlayerCard, PlacesList, CardReveal, Button, Banner, GameScreen, board.css, panels.css
-- scripts/check-*.ts  sanity checks (npm run check)
-- src/App.tsx, main.tsx  UI
+- src/shared/  constants.ts (all game numbers), design.ts + design.css (look), board.ts, cards.ts, sound.ts
+- src/game/  engine, rent, build, cards, auction, trade, endgame, networth, ai, actions (one entry: applyAction), controller, useLocalGame
+- src/server/  handler.ts (online referee), types.ts
+- src/online/  api.ts (browser to server), useOnlineGame.ts
+- supabase/  functions/game (Deno wrapper), migrations/ ; SETUP.md = owner's online setup steps
+- src/components/  screens and parts (GameScreen, SetupScreen, OnlineRoom, panels, Effects, css)
+- scripts/check-*.ts  tests (npm run check); scripts/mock-server.ts = local fake server for browser tests
 
 ## Run
-npm install; npm run dev (local), npm run build, npm run check
+npm install; npm run dev; npm run build; npm run check
 
 ## Rules for work
 - Read only the spec sections named for the current stage. Never invent; ask one short question.
-- One stage at a time, plan first, owner approves each stage. Keep replies short.
-- Never repeat values; use constants.ts and design.ts.
+- Fix only what the owner reports. Never repeat values; use constants.ts and design.ts.
 
 ## Handoff
-- Done: Stages 1-6 (movement, buying, rent, taxes, buildings, mortgage, Fortune and Festival cards). Interim rules: cannot-pay pays all cash (until stage 8); declined place stays unowned (until stage 7 auctions); Get Out of Jail Free is only held (used in stage 8).
-- Next: Stage 7 (auctions, trading and their timers). Read sections 13, 26, 30.
-- Owner: connect repo to Vercel; temporary setup screen in App.tsx is replaced later.
+- Done: Stages 1-11 built. Stage 10 online play is tested against an in-memory referee and a local mock, NOT against a live Supabase project (owner must follow SETUP.md).
+- Next: Stage 12 (final testing against the acceptance checklist, section 36) after the owner reviews 7-11.
+- Open decisions made by the builder are listed in the stage 7-11 report to the owner; tune AI numbers in constants.ts.

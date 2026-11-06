@@ -5,10 +5,10 @@ import { bidReason } from '../game/auction.ts';
 import type { GameState } from '../game/types.ts';
 import TimerRing from './TimerRing.tsx';
 
-interface Props { state: GameState; now: number; onBid: (seat: number, step: number) => void }
+interface Props { state: GameState; now: number; canBid: (seat: number) => boolean; onBid: (seat: number, step: number) => void }
 
 // Big countdown and one-tap bid buttons for every human player (computers bid on their own).
-export default function AuctionPanel({ state, now, onBid }: Props) {
+export default function AuctionPanel({ state, now, canBid, onBid }: Props) {
   const a = state.auction!;
   const tile = TILES[a.tile];
   const left = Math.max(0, Math.ceil((a.endsAt - now) / 1000));
@@ -25,7 +25,7 @@ export default function AuctionPanel({ state, now, onBid }: Props) {
         </div>
       </div>
       <div className="auction__buttons">
-        {state.players.map((p, seat) => p.bankrupt || p.ai ? null : (
+        {state.players.map((p, seat) => p.bankrupt || !canBid(seat) ? null : (
           <div key={seat} className="auction__player">
             <b>{p.token} {p.name}</b>
             {CONSTANTS.AUCTION_BID_STEPS.map((step) => {

@@ -109,3 +109,15 @@
 .setup__seat select, .setup__seat input { min-height: 44px; font: 600 17px var(--font-body); border: 2px solid var(--gold); border-radius: 10px; padding: 0 10px; }
 .setup__tokens { display: flex; flex-wrap: wrap; gap: 6px; }
 .setup__tokens .chip { font-size: 24px; }
+
+.chat__log { max-height: 160px; overflow-y: auto; font-size: 15px; }
+.chat__emoji { display: flex; gap: 4px; flex-wrap: wrap; margin: 6px 0; }
+.chat__row { display: flex; gap: 6px; }
+.chat__row input { flex: 1; min-width: 0; min-height: 44px; border: 2px solid var(--gold); border-radius: 10px; padding: 0 10px; font-size: 16px; }
+.chat__row .btn { font-size: 16px; padding: 0 14px; }
+.lobby__code { font: 800 64px var(--font-display); letter-spacing: 8px; color: var(--maroon); background: #fff; border: 4px dashed var(--gold); border-radius: var(--radius-md); display: inline-block; padding: 0 var(--space-lg); }
+.lobby__seats { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-md); margin: var(--space-md) 0; text-align: left; }
+.lobby__seat { background: #fff; border: 3px solid var(--gold); border-radius: var(--radius-md); padding: var(--space-sm) var(--space-md); }
+.lobby__seat--open { border-style: dashed; opacity: 0.8; }
+.error { color: #a00; font-weight: 700; }
+.lobby__input { min-height: 52px; font: 800 28px var(--font-display); letter-spacing: 4px; text-align: center; border: 3px solid var(--gold); border-radius: var(--radius-md); padding: 0 12px; width: 260px; max-width: 100%; }

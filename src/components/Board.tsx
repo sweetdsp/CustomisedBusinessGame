@@ -1,10 +1,14 @@
 import { TILES, gridCell } from '../shared/board.ts';
 import Tile, { type OwnerView } from './Tile.tsx';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
+import { sound } from '../shared/sound.ts';
 
 export interface TokenView { seat: number; token: string; position: number }
 
 export default function Board({ children, tokens = [], owners = {} }: { children?: ReactNode; tokens?: TokenView[]; owners?: Record<number, OwnerView> }) {
+  // tiny hop sound whenever any token lands on a new tile
+  const last = useRef('');
+  useEffect(() => { const k = tokens.map((t) => t.position).join(','); if (last.current && k !== last.current) sound.hop(); last.current = k; });
   return (
     <div className="board">
       {TILES.map((t) => {
