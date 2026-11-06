@@ -19,6 +19,7 @@
   --shadow-soft: 0 4px 12px rgba(90, 15, 31, 0.25);
   --btn-min-height: 48px;
   --t-press: 120ms;
+  --t-hop: 250ms;
 }
 body {
   margin: 0;
