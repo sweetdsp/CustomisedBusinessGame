@@ -48,6 +48,8 @@ export const CONSTANTS = {
   TILE_COUNT: 42,
   START_TILE: 0,
   JAIL_TILE: 11,
+  REST_TILE: 21,
+  CARDS_PER_DECK: 16,
   MIN_SEATS: 2,
   MAX_SEATS: 4,
   // Dice (section 8)

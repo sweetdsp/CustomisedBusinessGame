@@ -29,7 +29,7 @@ export function useLocalGame(seats: { name: string; token: string }[], startingC
     if (result.toJail) {
       setShownPos(next.players[state.current].position);
     } else {
-      for (const tile of result.path) { setShownPos(tile); await wait(TIMINGS.tokenHop); }
+      for (const tile of [...result.path, ...(result.cardPath ?? [])]) { setShownPos(tile); await wait(TIMINGS.tokenHop); }
     }
     setMessage(next.message);
     setState(next);

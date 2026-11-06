@@ -111,3 +111,14 @@
 .tile__buildings { position: absolute; left: 1px; top: 24%; z-index: 2; font-size: 1.3em; line-height: 1; }
 .tile--mortgaged { filter: grayscale(0.85); opacity: 0.8; }
 .tile__lock { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.65); color: #fff; font-size: 0.85em; font-weight: 800; z-index: 3; }
+
+.cardreveal {
+  width: 46cqw; padding: 1.2cqw 2cqw; border-radius: 1.6cqw; border: 0.4cqw solid var(--gold);
+  box-shadow: var(--shadow-soft); text-align: center; animation: flip var(--t-card-flip, 700ms) ease-out;
+}
+.cardreveal--fortune { background: #ffe1ec; color: var(--maroon); }
+.cardreveal--festival { background: #fff0b8; color: var(--maroon); }
+.cardreveal__head { font: 800 2.2cqw var(--font-display); }
+.cardreveal__text { font-size: 1.9cqw; line-height: 1.2; font-weight: 700; margin-top: 0.4cqw; }
+@keyframes flip { 0% { transform: perspective(60cqw) rotateY(90deg); } 100% { transform: perspective(60cqw) rotateY(0); } }
+@media (prefers-reduced-motion: reduce) { .cardreveal { animation: none; } }

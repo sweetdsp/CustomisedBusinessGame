@@ -36,6 +36,7 @@ export const TIMINGS = {
   diceTumble: 900,
   banner: 1800,
   celebrate: 1500,
+  cardFlip: 700,
 } as const;
 
 // Indian comma style, e.g. 300000 -> "₹3,00,000"

@@ -7,6 +7,7 @@ export interface Player {
   position: number;
   inJail: boolean;
   bankrupt: boolean;
+  heldCards: string[]; // Get Out of Jail Free card ids kept until used (stage 8)
 }
 
 export type Phase = 'awaitRoll' | 'awaitBuy' | 'awaitEnd';
@@ -25,6 +26,7 @@ export interface RollResult {
   path: number[]; // tiles stepped on, in order (empty when sent to Jail)
   salaryPaid: number;
   toJail: boolean;
+  cardPath?: number[]; // extra tiles hopped because of a card move
 }
 
 export interface GameState {
@@ -37,6 +39,8 @@ export interface GameState {
   lapSalary: number;
   properties: Record<number, PropertyState>; // keyed by tile index, property tiles only
   buildTile: number | null; // own place just landed on; the only tile you may build on right now
+  decks: Record<'fortune' | 'festival', string[]>; // card ids, top first
+  lastCard?: { deck: 'fortune' | 'festival'; id: string }; // shown in the centre until the next action
   lastRoll?: RollResult;
   message: string;
 }

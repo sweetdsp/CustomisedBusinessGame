@@ -6,6 +6,7 @@ import Button from './Button.tsx';
 import ChatBox from './ChatBox.tsx';
 import TimerRing from './TimerRing.tsx';
 import Dice from './Dice.tsx';
+import CardReveal from './CardReveal.tsx';
 import { useLocalGame } from '../game/useLocalGame.ts';
 import { CONSTANTS } from '../shared/constants.ts';
 import { TILES, propertyOf } from '../shared/board.ts';
@@ -36,7 +37,7 @@ export default function GameScreen({ seats, startingCash, onBack }: {
     <div className="game">
       <aside className="game__players">
         {state.players.map((p, i) => (
-          <PlayerCard key={i} player={{ name: p.name, token: p.token, cash: p.cash, places: ownedTiles(state, i).length }} active={i === state.current} />
+          <PlayerCard key={i} player={{ name: p.name, token: p.token, cash: p.cash, places: ownedTiles(state, i).length, jailCards: p.heldCards.length }} active={i === state.current} />
         ))}
         <PlacesList state={state} disabled={g.busy} onMortgage={g.doMortgage} onUnmortgage={g.doUnmortgage} onSell={g.doSell} />
       </aside>
@@ -44,7 +45,7 @@ export default function GameScreen({ seats, startingCash, onBack }: {
         <Board tokens={tokens} owners={owners}>
           <CenterPanel>
             <Banner>{g.message}</Banner>
-            <Dice values={g.shownDice} rolling={g.rolling} />
+            {state.lastCard && !g.busy ? <CardReveal deck={state.lastCard.deck} id={state.lastCard.id} /> : <Dice values={g.shownDice} rolling={g.rolling} />}
           </CenterPanel>
         </Board>
       </div>

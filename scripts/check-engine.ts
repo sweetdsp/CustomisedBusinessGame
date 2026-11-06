@@ -119,7 +119,7 @@ eq(roll(at(own(base, 0, ['Wayanad']), 29), fixed(2, 3)).state.players[0].cash ==
 eq(toTile(base, 20, 3, 3).players[0].cash === 201500 && toTile(base, 20, 3, 3).extraTurn, 'Lucky Draw +1500 (tile 26), double keeps extra turn');
 const gj = roll(at(base, 28), fixed(2, 2)); // tile 32 on a double
 eq(gj.state.players[0].position === 11 && gj.state.players[0].inJail && !gj.state.extraTurn && gj.state.players[0].cash === 200000, 'Go to Jail: tile 11, no salary, turn ends even on a double');
-eq(['Fortune', 'Festival'].every((n) => roll(at(base, n === 'Fortune' ? 10 : 19), fixed(1, 2)).state.message.includes('stage 6')), 'card tiles: message only');
+eq(['fortune', 'festival'].every((d) => base.decks[d as 'fortune'].length === 16), 'both decks have 16 cards (card rules tested in check-cards)');
 eq(propertyOf(TILES[3])!.price === 4000, 'sanity: Ramappa 4000');
 
 // ---- Stage 5: building, mortgage, unmortgage, selling ----

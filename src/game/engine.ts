@@ -4,35 +4,27 @@ import { TILES, propertyOf } from '../shared/board.ts';
 import { formatRupees } from '../shared/design.ts';
 import { rollDice } from './dice.ts';
 import { rentFor, luxuryTax, touristTax } from './rent.ts';
+import { pay } from './money.ts';
+import { shuffleDecks, drawCard, applyCard } from './cards.ts';
 import type { GameState, Player, PropertyState, Rng, RollResult } from './types.ts';
+
+type Landed = { state: GameState; note: string; path?: number[] };
 
 export function newGame(seats: { name: string; token: string }[], startingCash: number, rng: Rng): GameState {
   const players: Player[] = seats.map((s) => ({
-    ...s, cash: startingCash, position: CONSTANTS.START_TILE, inJail: false, bankrupt: false,
+    ...s, cash: startingCash, position: CONSTANTS.START_TILE, inJail: false, bankrupt: false, heldCards: [],
   }));
   const properties: Record<number, PropertyState> = {};
   for (const t of TILES) if (t.kind === 'property') properties[t.index] = { owner: null, mortgaged: false, houses: 0, hotel: false };
   const current = Math.floor(rng() * players.length); // first player chosen at random
   return {
     players, current, phase: 'awaitRoll', doublesCount: 0, extraTurn: false,
-    startingCash, lapSalary: CONSTANTS.LAP_SALARY[startingCash], properties, buildTile: null,
+    startingCash, lapSalary: CONSTANTS.LAP_SALARY[startingCash], properties, buildTile: null, decks: shuffleDecks(rng),
     message: `${players[current].name} goes first`,
   };
 }
 
-// Interim rule (until stage 8): a player who cannot pay gives all remaining cash and stops at 0.
-function pay(state: GameState, from: number, to: number | null, amount: number): { state: GameState; note: string } {
-  const paid = Math.min(state.players[from].cash, amount);
-  const players = state.players.map((p, i) => {
-    if (i === from) return { ...p, cash: p.cash - paid };
-    if (i === to) return { ...p, cash: p.cash + paid };
-    return p;
-  });
-  const short = paid < amount ? ` Could not pay all ${formatRupees(amount)}, paid ${formatRupees(paid)} (debt rules come in stage 8).` : '';
-  return { state: { ...state, players }, note: short };
-}
-
-function resolveLanding(state: GameState, seat: number): { state: GameState; note: string } {
+function resolveLanding(state: GameState, seat: number): Landed {
   const me = state.players[seat];
   const tile = TILES[me.position];
   const def = propertyOf(tile);
@@ -72,8 +64,15 @@ function resolveLanding(state: GameState, seat: number): { state: GameState; not
       const players = state.players.map((p, i) => (i === seat ? { ...p, position: CONSTANTS.JAIL_TILE, inJail: true } : p));
       return { state: { ...state, players, extraTurn: false }, note: 'Go to Jail!' };
     }
-    case 'fortune': case 'festival':
-      return { state, note: `${tile.name}: cards come in stage 6.` };
+    case 'fortune': case 'festival': {
+      const drawn = drawCard(state, tile.kind);
+      const a = applyCard(drawn.state, seat, drawn.card, resolveLanding);
+      return {
+        state: { ...a.state, lastCard: { deck: tile.kind, id: drawn.card.id } },
+        note: `${tile.name} card: ${drawn.card.text}${a.note}`,
+        path: a.path,
+      };
+    }
     default: // Start, Jail / Just Visiting, Rest at the Beach
       return { state, note: `${tile.name}.` };
   }
@@ -110,7 +109,8 @@ export function roll(state: GameState, rng: Rng): { state: GameState; result: Ro
   const result: RollResult = { dice, total, isDouble, path, salaryPaid, toJail: false };
   const players = state.players.map((p, i) => (i === seat ? { ...p, position: path[path.length - 1], cash: p.cash + salaryPaid } : p));
   const base: GameState = { ...state, players, phase: 'awaitEnd', doublesCount, extraTurn: isDouble, lastRoll: result, buildTile: null };
-  const landed = resolveLanding(base, seat);
+  const landed = resolveLanding({ ...base, lastCard: undefined }, seat);
+  if (landed.path) result.cardPath = landed.path;
   const salary = salaryPaid ? ` Salary +${formatRupees(salaryPaid)}!` : '';
   const dbl = landed.state.extraTurn ? ' Doubles: roll again after ending the turn.' : '';
   return { result, state: { ...landed.state, message: `${head}${salary} ${landed.note}${dbl}` } };
@@ -141,12 +141,12 @@ export function decline(state: GameState): GameState {
 export function endTurn(state: GameState): GameState {
   if (state.phase !== 'awaitEnd') throw new Error('Cannot end turn yet');
   if (state.extraTurn) {
-    return { ...state, phase: 'awaitRoll', extraTurn: false, buildTile: null, message: `${state.players[state.current].name} rolls again!` };
+    return { ...state, phase: 'awaitRoll', extraTurn: false, buildTile: null, lastCard: undefined, message: `${state.players[state.current].name} rolls again!` };
   }
   let next = state.current;
   do next = (next + 1) % state.players.length; while (state.players[next].bankrupt); // skip bankrupt players
   return {
-    ...state, current: next, phase: 'awaitRoll', doublesCount: 0, extraTurn: false, buildTile: null,
+    ...state, current: next, phase: 'awaitRoll', doublesCount: 0, extraTurn: false, buildTile: null, lastCard: undefined,
     message: `${state.players[next].name}'s turn`,
   };
 }

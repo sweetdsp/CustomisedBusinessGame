@@ -20,6 +20,7 @@
   --btn-min-height: 48px;
   --t-press: 120ms;
   --t-hop: 250ms;
+  --t-card-flip: 700ms;
 }
 body {
   margin: 0;
