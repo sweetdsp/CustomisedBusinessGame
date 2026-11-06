@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { TIMINGS } from '../shared/design.ts';
 import { newGame } from './engine.ts';
-import { applyAction, type Action } from './actions.ts';
+import { applyAction, timeoutAction, type Action } from './actions.ts';
 import { nextComputerMove } from './ai.ts';
 import { CONSTANTS } from '../shared/constants.ts';
 import { helpers, type GameController } from './controller.ts';
@@ -17,6 +17,7 @@ export function useLocalGame(seats: Seat[], startingCash: number, endMode: EndMo
   const setState = (s: GameState) => { ref.current = s; setStateRaw(s); };
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
+  const autoBusy = useRef(false);
   const [rolling, setRolling] = useState(false);
   const [shownDice, setShownDice] = useState<[number, number] | null>(null);
   const [shownPos, setShownPos] = useState<{ seat: number; tile: number } | null>(null); // mover's tile while hopping
@@ -30,6 +31,13 @@ export function useLocalGame(seats: Seat[], startingCash: number, endMode: EndMo
       setNow(t);
       if (busyRef.current) return;
       const s = ref.current;
+      // 10 second turn timer (section 28): a person who is too slow is rolled for, skips optional actions, and the turn ends
+      const cur = s.players[s.current];
+      if (!s.gameOver && s.turnEndsAt !== null && t >= s.turnEndsAt && !cur.ai && !s.auction && !s.trade && !s.debt && !autoBusy.current) {
+        autoBusy.current = true;
+        void act(s.current, timeoutAction(s)).finally(() => { autoBusy.current = false; });
+        return;
+      }
       if (s.auction || s.trade || s.debt || s.endMode.kind === 'timed') {
         const next = applyAction(s, s.current, { type: 'tick' }, { rng: Math.random, now: t }).state;
         if (next !== s && (next.auction !== s.auction || next.trade !== s.trade || next.debt !== s.debt || next.gameOver !== s.gameOver || next.message !== s.message)) {
@@ -51,7 +59,8 @@ export function useLocalGame(seats: Seat[], startingCash: number, endMode: EndMo
     if (result.toJail) setShownPos({ seat, tile: next.players[seat].position });
     else for (const tile of [...result.path, ...(result.cardPath ?? [])]) { setShownPos({ seat, tile }); await wait(TIMINGS.tokenHop); }
     setMessage(next.message);
-    setState(next);
+    // the timer for the rest of the turn starts when the token has stopped moving
+    setState(next.turnEndsAt !== null ? { ...next, turnEndsAt: Date.now() + CONSTANTS.TURN_ROLL_SECONDS * 1000 } : next);
     setShownPos(null);
     busyRef.current = false; setBusy(false);
   }

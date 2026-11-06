@@ -1,4 +1,4 @@
--- Five States Business Game: one public record per game, secrets kept apart, written only by the edge function.
+-- Business Game: one public record per game, secrets kept apart, written only by the edge function.
 create table if not exists public.games (
   id uuid primary key,
   code text not null unique,

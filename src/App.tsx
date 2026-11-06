@@ -3,6 +3,7 @@ import Button from './components/Button.tsx';
 import SetupScreen, { type GameConfig } from './components/SetupScreen.tsx';
 import LocalGame from './components/LocalGame.tsx';
 import OnlineRoom from './components/OnlineRoom.tsx';
+import Credits from './components/Credits.tsx';
 import JoinScreen from './components/JoinScreen.tsx';
 import { call, loadSession, saveSession, onlineConfigured, type Session } from './online/api.ts';
 
@@ -17,6 +18,7 @@ export default function App() {
   const saved = loadSession();
   const [screen, setScreen] = useState<Screen>(joinParam ? { name: 'join' } : { name: 'home' });
   const [error, setError] = useState<string | null>(null);
+  const [credits, setCredits] = useState(false);
   const home = () => setScreen({ name: 'home' });
 
   if (screen.name === 'local') {
@@ -46,14 +48,15 @@ export default function App() {
 
   return (
     <main className="home">
-      <h1>Five States Business Game</h1>
-      <p>Towns of Tamil Nadu, Kerala, Karnataka, Andhra Pradesh and Telangana.</p>
+      <h1>Business Game</h1>
       <div className="home__row">
         <Button primary icon="🎲" onClick={() => setScreen({ name: 'setup' })}>Play on this screen</Button>
         <Button icon="🌐" onClick={() => setScreen({ name: 'setupOnline' })} disabledReason={onlineConfigured ? undefined : 'Online play needs setup (SETUP.md)'}>Create Game</Button>
         <Button icon="🚪" onClick={() => setScreen({ name: 'join' })} disabledReason={onlineConfigured ? undefined : 'Online play needs setup (SETUP.md)'}>Join Game</Button>
         {saved && onlineConfigured && <Button icon="↩️" onClick={() => setScreen({ name: 'room', session: saved })}>Rejoin my game</Button>}
       </div>
+      <p><button className="link" onClick={() => setCredits(true)}>📷 Photo credits</button></p>
+      {credits && <Credits onClose={() => setCredits(false)} />}
     </main>
   );
 }

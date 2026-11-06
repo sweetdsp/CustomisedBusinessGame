@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Board from './Board.tsx';
-import CenterPanel from './CenterPanel.tsx';
+import Stage from './Stage.tsx';
 import Banner from './Banner.tsx';
 import PlayerCard from './PlayerCard.tsx';
 import Button from './Button.tsx';
@@ -17,9 +17,11 @@ import NetWorthModal from './NetWorthModal.tsx';
 import ResultsScreen from './ResultsScreen.tsx';
 import Effects from './Effects.tsx';
 import MuteButton from './MuteButton.tsx';
+import { speak } from '../shared/sound.ts';
 import type { GameController } from '../game/controller.ts';
 import { CONSTANTS } from '../shared/constants.ts';
 import { TILES, propertyOf } from '../shared/board.ts';
+import { STATES } from '../shared/constants.ts';
 import { SEAT_COLORS, formatRupees } from '../shared/design.ts';
 import { ownedTiles } from '../game/rent.ts';
 import { checkBuild } from '../game/build.ts';
@@ -32,19 +34,28 @@ export default function GameScreen({ g, onBack }: { g: GameController; onBack: (
   const [tradeOpen, setTradeOpen] = useState(false);
   const [worthOpen, setWorthOpen] = useState(false);
   const [confirmSeat, setConfirmSeat] = useState<number | null>(null);
+  // Voice announcements: say every new game message so each player knows what just happened.
+  useEffect(() => {
+    if (g.message && !/is rolling/.test(g.message)) speak(g.message);
+  }, [g.message]);
   if (g.fatal) return <main className="home"><h1>⚠️ Session broken</h1><p>{g.fatal}</p><button className="btn" onClick={onBack}>Back to start</button></main>;
   if (state.gameOver) return <ResultsScreen state={state} onHome={onBack} />;
   const cur = state.players[state.current];
   const deadline = gameDeadline(state);
   const now = g.now;
   const tokens = state.players
-    .map((p, seat) => ({ seat, token: p.token, position: g.shownPos && g.shownPos.seat === seat ? g.shownPos.tile : p.position, bankrupt: p.bankrupt }))
+    .map((p, seat) => ({ seat, token: p.token, color: SEAT_COLORS[seat], position: g.shownPos && g.shownPos.seat === seat ? g.shownPos.tile : p.position, bankrupt: p.bankrupt }))
     .filter((t) => !t.bankrupt);
   const owners = Object.fromEntries(
     Object.entries(state.properties)
       .filter(([, p]) => p.owner !== null)
       .map(([i, p]) => [i, { token: state.players[p.owner!].token, color: SEAT_COLORS[p.owner!], mortgaged: p.mortgaged, houses: p.houses, hotel: p.hotel }]),
   );
+  const sets = (seat: number) => (Object.keys(STATES) as (keyof typeof STATES)[]).map((st) => ({
+    state: st,
+    count: ownedTiles(state, seat).filter((t) => TILES[t].state === st).length,
+  }));
+  const timerLeft = state.turnEndsAt === null ? null : Math.max(0, Math.ceil((state.turnEndsAt - now) / 1000));
   const price = propertyOf(TILES[cur.position])?.price ?? 0;
   const aiTurn = !mine(state.current);
   const overlay = !!(state.auction || state.trade || state.debt) || aiTurn;
@@ -65,25 +76,29 @@ export default function GameScreen({ g, onBack }: { g: GameController; onBack: (
     <div className="game">
       <aside className="game__players">
         {state.players.map((p, i) => (
-          <PlayerCard key={i} seat={i} player={{ name: p.name, token: p.token, cash: p.cash, places: ownedTiles(state, i).length, jailCards: p.heldCards.length, level: p.ai }} active={i === state.current} />
+          <PlayerCard key={i} seat={i} player={{ name: p.name, token: p.token, cash: p.cash, places: ownedTiles(state, i).length, jailCards: p.heldCards.length, level: p.ai, sets: sets(i) }} active={i === state.current} />
         ))}
         <PlacesList state={state} disabled={g.busy || !!(state.auction || state.trade) || aiTurn} onMortgage={g.doMortgage} onUnmortgage={g.doUnmortgage} onSell={g.doSell} />
       </aside>
       <div className="game__board">
-        <Board tokens={tokens} owners={owners}>
-          <CenterPanel>
-            {state.debt ? <DebtPanel state={state} now={g.now} canAct={mine(state.debt.seat)} onBankrupt={(seat) => g.act(seat, { type: 'bankrupt' })} />
-              : state.auction ? <AuctionPanel state={state} now={g.now} canBid={mine} onBid={(seat, step) => g.act(seat, { type: 'bid', step })} />
-              : state.trade ? <TradePanel state={state} now={g.now} canAnswer={mine(state.trade.to)} onAnswer={(accept) => g.act(state.trade!.to, { type: 'answerTrade', accept })} />
-              : (<>
-                <Banner>{g.message}</Banner>
-                {state.lastCard && !g.busy ? <CardReveal deck={state.lastCard.deck} id={state.lastCard.id} /> : <Dice values={g.shownDice} rolling={g.rolling} />}
-              </>)}
-          </CenterPanel>
-        </Board>
+        <Stage
+          dice={<Dice values={g.shownDice} rolling={g.rolling} />}
+          side={state.lastCard && !g.busy && !state.auction && !state.trade && !state.debt ? <CardReveal deck={state.lastCard.deck} id={state.lastCard.id} /> : undefined}
+        >
+          {state.debt ? <DebtPanel state={state} now={g.now} canAct={mine(state.debt.seat)} onBankrupt={(seat) => g.act(seat, { type: 'bankrupt' })} />
+            : state.auction ? <AuctionPanel state={state} now={g.now} canBid={mine} onBid={(seat, step) => g.act(seat, { type: 'bid', step })} />
+            : state.trade ? <TradePanel state={state} now={g.now} canAnswer={mine(state.trade.to)} onAnswer={(accept) => g.act(state.trade!.to, { type: 'answerTrade', accept })} />
+            : <Banner>{g.message}</Banner>}
+        </Stage>
+        <Board tokens={tokens} owners={owners} />
       </div>
       <aside className="game__side">
-        <TimerRing seconds={CONSTANTS.TURN_ROLL_SECONDS} total={CONSTANTS.TURN_ROLL_SECONDS} />
+        {timerLeft !== null && !cur.ai && !state.auction && !state.trade && !state.debt && (
+          <div className="turntimer">
+            <TimerRing seconds={timerLeft} total={CONSTANTS.TURN_ROLL_SECONDS} />
+            <small>{cur.name}: {state.phase === 'awaitRoll' ? 'roll' : 'finish'} in {timerLeft}s</small>
+          </div>
+        )}
         <Button primary={canRoll} icon="🎲" onClick={g.doRoll} disabledReason={rollWhy}>Roll Dice</Button>
         <Button primary={canBuild} icon="🔨" onClick={g.doBuild} disabledReason={g.busy ? 'Moving...' : aiTurn ? `${cur.name} is playing` : overlay ? 'Auction or trade open' : buildCheck.ok ? undefined : buildCheck.reason}>
           {buildCheck.ok ? `Build ${buildCheck.label} ${formatRupees(buildCheck.cost)}` : 'Build'}

@@ -39,7 +39,7 @@ export const TIMINGS = {
   cardFlip: 700,
 } as const;
 
-// Indian comma style, e.g. 300000 -> "₹3,00,000"
+// Lakh-style comma grouping, e.g. 300000 -> "₹3,00,000"
 export function formatRupees(amount: number): string {
   return '₹' + amount.toLocaleString('en-IN');
 }

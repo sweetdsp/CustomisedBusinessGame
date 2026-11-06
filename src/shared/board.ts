@@ -46,12 +46,27 @@ export function propertyOf(tile: Tile): PropertyDef | undefined {
   return tile.kind === 'property' ? PROPERTIES.find((p) => p.name === tile.name) : undefined;
 }
 
-// Grid cell (1-based) on the 12 column by 11 row board. Start is bottom right, clockwise.
+// The path is a closed loop through a 7 column by 6 row grid, so every tile is large and each step goes to a neighbouring tile.
+// Tile 0 (Start) is the top-left cell. The path runs along the top row, snakes down through the middle, then climbs the left column back to Start.
+export const GRID_COLS = 7;
+export const GRID_ROWS = 6;
+
+// Grid cell (1-based) for a tile index.
 export function gridCell(i: number): { row: number; col: number } {
-  if (i <= 11) return { row: 11, col: 12 - i };
-  if (i <= 20) return { row: 22 - i, col: 1 };
-  if (i <= 32) return { row: 1, col: i - 20 };
-  return { row: i - 31, col: 12 };
+  if (i <= 6) return { row: 1, col: i + 1 };                    // top row, left to right
+  if (i <= 36) {                                                  // rows 2 to 6 snake through columns 2 to 7
+    const k = i - 7, rowIdx = Math.floor(k / 6), pos = k % 6;
+    const leftToRight = rowIdx % 2 === 1;
+    return { row: rowIdx + 2, col: leftToRight ? pos + 2 : 7 - pos };
+  }
+  return { row: 6 - (i - 37), col: 1 };                           // left column, bottom to top (rows 6 to 2)
 }
 
+// Arrow showing which way the path goes next from a tile.
+export function flowArrow(i: number): string {
+  const a = gridCell(i), b = gridCell((i + 1) % 42);
+  return b.col > a.col ? '→' : b.col < a.col ? '←' : b.row > a.row ? '↓' : '↑';
+}
+
+// The four special corner tiles keep their special look (Start, Jail, Rest at the Beach, Go to Jail).
 export const CORNER_TILES = [0, 11, 21, 32];

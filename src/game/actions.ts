@@ -4,6 +4,7 @@ import { declareBankrupt, expireDebt, settleDebtIfCovered } from './endgame.ts';
 import { build, mortgage, unmortgage, sellBuilding } from './build.ts';
 import { bid, settleAuction } from './auction.ts';
 import { proposeTrade, answerTrade, expireTrade } from './trade.ts';
+import { CONSTANTS } from '../shared/constants.ts';
 import type { Bundle, GameState, Rng, RollResult } from './types.ts';
 
 export type Action =
@@ -19,6 +20,22 @@ export type Action =
 
 export interface Ctx { rng: Rng; now: number }
 
+const overlayOpen = (s: GameState) => !!(s.auction || s.trade || s.debt);
+
+// The 10 second turn timer (section 28) restarts whenever the turn, its phase or an open auction/trade/debt changes.
+export function retimer(prev: GameState | null, next: GameState, now: number): GameState {
+  if (next.gameOver) return { ...next, turnEndsAt: null };
+  const changed = !prev || prev.current !== next.current || prev.phase !== next.phase || prev.lastRoll !== next.lastRoll || (overlayOpen(prev) && !overlayOpen(next));
+  if (!changed) return next;
+  const newTurn = !prev || prev.current !== next.current;
+  return { ...next, turnEndsAt: now + CONSTANTS.TURN_ROLL_SECONDS * 1000, turnTimedOut: newTurn ? false : next.turnTimedOut };
+}
+
+// What the server (or the local game) does for a person who ran out of time: roll for them, skip optional actions, end the turn.
+export function timeoutAction(s: GameState): Action {
+  return s.phase === 'awaitRoll' ? { type: 'roll' } : s.phase === 'awaitBuy' ? { type: 'decline' } : { type: 'endTurn' };
+}
+
 // Time-based events: auctions and trades that have run out.
 export function tick(state: GameState): GameState {
   let s = state;
@@ -29,6 +46,11 @@ export function tick(state: GameState): GameState {
 }
 
 export function applyAction(state: GameState, actor: number, action: Action, ctx: Ctx): { state: GameState; result?: RollResult } {
+  const out = applyInner(state, actor, action, ctx);
+  return { ...out, state: retimer(state, out.state, ctx.now) };
+}
+
+function applyInner(state: GameState, actor: number, action: Action, ctx: Ctx): { state: GameState; result?: RollResult } {
   let s: GameState = { ...state, now: ctx.now };
   if (action.type === 'tick') return { state: tick(s) };
   s = tick(s); // run out any expired auction or trade first
