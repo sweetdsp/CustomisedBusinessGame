@@ -107,3 +107,7 @@
 @media (prefers-reduced-motion: reduce) { .die--tumble, .die--settle, .token { animation: none; } }
 
 .tile__owner { position: absolute; top: 1px; right: 1px; z-index: 2; font-size: 1.7em; line-height: 1; padding: 0.1em 0.2em; border-radius: 50%; border: 1px solid #fff; }
+
+.tile__buildings { position: absolute; left: 1px; top: 24%; z-index: 2; font-size: 1.3em; line-height: 1; }
+.tile--mortgaged { filter: grayscale(0.85); opacity: 0.8; }
+.tile__lock { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.65); color: #fff; font-size: 0.85em; font-weight: 800; z-index: 3; }

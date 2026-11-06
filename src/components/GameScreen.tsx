@@ -11,6 +11,8 @@ import { CONSTANTS } from '../shared/constants.ts';
 import { TILES, propertyOf } from '../shared/board.ts';
 import { SEAT_COLORS, formatRupees } from '../shared/design.ts';
 import { ownedTiles } from '../game/rent.ts';
+import { checkBuild } from '../game/build.ts';
+import PlacesList from './PlacesList.tsx';
 
 export default function GameScreen({ seats, startingCash, onBack }: {
   seats: { name: string; token: string }[]; startingCash: number; onBack: () => void;
@@ -23,10 +25,12 @@ export default function GameScreen({ seats, startingCash, onBack }: {
   const owners = Object.fromEntries(
     Object.entries(state.properties)
       .filter(([, p]) => p.owner !== null)
-      .map(([i, p]) => [i, { token: state.players[p.owner!].token, color: SEAT_COLORS[p.owner!], mortgaged: p.mortgaged }]),
+      .map(([i, p]) => [i, { token: state.players[p.owner!].token, color: SEAT_COLORS[p.owner!], mortgaged: p.mortgaged, houses: p.houses, hotel: p.hotel }]),
   );
   const price = propertyOf(TILES[state.players[state.current].position])?.price ?? 0;
   const buying = state.phase === 'awaitBuy' && !g.busy;
+  const buildCheck = checkBuild(state);
+  const canBuild = buildCheck.ok && !g.busy;
   const canRoll = state.phase === 'awaitRoll' && !g.busy;
   return (
     <div className="game">
@@ -34,6 +38,7 @@ export default function GameScreen({ seats, startingCash, onBack }: {
         {state.players.map((p, i) => (
           <PlayerCard key={i} player={{ name: p.name, token: p.token, cash: p.cash, places: ownedTiles(state, i).length }} active={i === state.current} />
         ))}
+        <PlacesList state={state} disabled={g.busy} onMortgage={g.doMortgage} onUnmortgage={g.doUnmortgage} onSell={g.doSell} />
       </aside>
       <div className="game__board">
         <Board tokens={tokens} owners={owners}>
@@ -47,6 +52,10 @@ export default function GameScreen({ seats, startingCash, onBack }: {
         <TimerRing seconds={CONSTANTS.TURN_ROLL_SECONDS} total={CONSTANTS.TURN_ROLL_SECONDS} />
         <Button primary={canRoll} icon="🎲" onClick={g.doRoll}
           disabledReason={canRoll ? undefined : g.busy ? 'Moving...' : 'Already rolled'}>Roll Dice</Button>
+        <Button primary={canBuild} icon="🔨" onClick={g.doBuild}
+          disabledReason={g.busy ? 'Moving...' : buildCheck.ok ? undefined : buildCheck.reason}>
+          {buildCheck.ok ? `Build ${buildCheck.label} ${formatRupees(buildCheck.cost)}` : 'Build'}
+        </Button>
         <Button primary={buying} icon="🛒" onClick={g.doBuy}
           disabledReason={buying ? undefined : 'Land on a place for sale'}>Buy {buying ? formatRupees(price) : ''}</Button>
         <Button icon="✋" onClick={g.doDecline} disabledReason={buying ? undefined : 'Land on a place for sale'}>No thanks</Button>

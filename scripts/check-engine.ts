@@ -1,5 +1,6 @@
 import { rollDice } from '../src/game/dice.ts';
 import { newGame, roll, endTurn as rawEnd, buy, decline } from '../src/game/engine.ts';
+import { build, mortgage, unmortgage, sellBuilding, checkBuild, unmortgageCost } from '../src/game/build.ts';
 import { rentFor, luxuryTax, touristTax } from '../src/game/rent.ts';
 import { TILES, propertyOf } from '../src/shared/board.ts';
 import type { GameState } from '../src/game/types.ts';
@@ -120,6 +121,63 @@ const gj = roll(at(base, 28), fixed(2, 2)); // tile 32 on a double
 eq(gj.state.players[0].position === 11 && gj.state.players[0].inJail && !gj.state.extraTurn && gj.state.players[0].cash === 200000, 'Go to Jail: tile 11, no salary, turn ends even on a double');
 eq(['Fortune', 'Festival'].every((n) => roll(at(base, n === 'Fortune' ? 10 : 19), fixed(1, 2)).state.message.includes('stage 6')), 'card tiles: message only');
 eq(propertyOf(TILES[3])!.price === 4000, 'sanity: Ramappa 4000');
+
+// ---- Stage 5: building, mortgage, unmortgage, selling ----
+const bt = (g: GameState, tile: number): GameState => ({ ...g, buildTile: tile, phase: 'awaitEnd' });
+const R = idx('Ramappa'); // price 4000: house 1400, hotel 2800, mortgage 2000
+const landOwn = roll(own(at(base, 0), 0, ['Ramappa']), fixed(1, 2)).state;
+eq(landOwn.buildTile === R, 'landing on own place allows building');
+let h1 = build(landOwn);
+eq(h1.properties[R].houses === 1 && h1.players[0].cash === 198600 && h1.buildTile === null, 'build one house, pay house price');
+let err = false; try { build(h1); } catch { err = true; } eq(err, 'second build in the same landing refused');
+eq(rentFor(h1, R) === 1200, 'rent follows the house');
+let h3 = own(base, 0, ['Ramappa'], { houses: 3 });
+eq(checkBuild(bt(own(base, 0, ['Ramappa'], { houses: 2 }), R)).ok && build(bt(own(base, 0, ['Ramappa'], { houses: 2 }), R)).properties[R].houses === 3, 'third house');
+const hot = build(bt(h3, R));
+eq(hot.properties[R].hotel && hot.properties[R].houses === 3 && hot.players[0].cash === 197200, 'hotel on top of three houses at hotel price');
+eq(!checkBuild(bt(hot, R)).ok, 'only one hotel');
+// never a fourth house: with three houses the next build is the hotel
+eq(checkBuild(bt(h3, R)).ok && (checkBuild(bt(h3, R)) as { label: string }).label === 'hotel', 'after 3 houses next is hotel');
+// buying and building in the same turn is refused
+const bought2 = buy(roll(at(base, 0), fixed(1, 2)).state);
+eq(bought2.buildTile === null && !checkBuild(bought2).ok, 'no building on a place bought this turn');
+eq(!checkBuild(bt(own(base, 1, ['Ramappa']), R)).ok, 'cannot build on another player place');
+eq(!checkBuild(bt(own(base, 0, ['Ramappa'], { mortgaged: true }), R)).ok, 'cannot build on mortgaged place');
+const lowCash = { ...bt(own(base, 0, ['Ramappa']), R), players: base.players.map((p, i) => (i === 0 ? { ...p, cash: 1399 } : p)) };
+eq(!checkBuild(lowCash).ok, 'not enough cash to build');
+eq(propertyOf(TILES[idx('Kodaikanal')])!.house === 2800 && propertyOf(TILES[idx('Wayanad')])!.hotel === 2000, 'table costs read from price table');
+// landing elsewhere / next roll clears the build chance
+const stale = { ...bt(own(base, 0, ['Ramappa']), R), phase: 'awaitRoll' as const };
+eq(endTurn(bt(own(base, 0, ['Ramappa']), R)).buildTile === null && roll(stale, fixed(3, 4)).state.buildTile === null, 'build chance cleared by End Turn and by the next roll');
+
+// mortgage
+const m = mortgage(own(base, 0, ['Ramappa']), R);
+eq(m.properties[R].mortgaged && m.players[0].cash === 202000, 'mortgage pays half the price');
+err = false; try { mortgage(own(base, 0, ['Ramappa'], { houses: 1 }), R); } catch { err = true; } eq(err, 'mortgage refused while buildings exist');
+err = false; try { mortgage(own(base, 1, ['Ramappa']), R); } catch { err = true; } eq(err, 'cannot mortgage another player place');
+err = false; try { mortgage(m, R); } catch { err = true; } eq(err, 'cannot mortgage twice');
+eq(mortgage(roll(own(base, 0, ['Ramappa']), fixed(1, 2)).state, R).players[0].cash === 202000, 'mortgage allowed after rolling; also before (above)');
+
+// unmortgage cost: mortgage + 10% of price, total rounded to nearest 100
+eq(unmortgageCost(idx('Courtallam')) === 1900 && unmortgageCost(idx('Wayanad')) === 1800 && unmortgageCost(idx('Mahabalipuram')) === 2500, 'unmortgage cost rounding (3200, 3000, 4200)');
+eq(unmortgageCost(idx('Kanyakumari')) === 3100 && unmortgageCost(idx('Ooty')) === 4300 && unmortgageCost(idx('Munnar')) === 4800, 'unmortgage cost rounding (5200, 7200, 8000)');
+const um = unmortgage(m, R);
+eq(!um.properties[R].mortgaged && um.players[0].cash === 202000 - 2400, 'unmortgage Ramappa: 2000 + 400');
+err = false; try { unmortgage(um, R); } catch { err = true; } eq(err, 'cannot unmortgage a place that is not mortgaged');
+const poorM = { ...m, players: m.players.map((p, i) => (i === 0 ? { ...p, cash: 2399 } : p)) };
+err = false; try { unmortgage(poorM, R); } catch { err = true; } eq(err, 'unmortgage needs enough cash');
+
+// selling: 50% of build price, hotel before houses, ends in 50
+const hot2 = own(base, 0, ['Ramappa'], { houses: 3, hotel: true });
+const s1 = sellBuilding(hot2, R);
+eq(!s1.properties[R].hotel && s1.properties[R].houses === 3 && s1.players[0].cash === 201400, 'hotel sold first for half of 2800');
+const s2 = sellBuilding(s1, R);
+eq(s2.properties[R].houses === 2 && s2.players[0].cash === 202100, 'then houses at half of 1400');
+const odd = sellBuilding(own(base, 0, ['Courtallam'], { houses: 1 }), idx('Courtallam')); // house 1100 -> 550
+eq(odd.players[0].cash === 200550, 'buyback may end in 50');
+err = false; try { sellBuilding(own(base, 0, ['Ramappa']), R); } catch { err = true; } eq(err, 'nothing to sell');
+// rent with buildings then mortgage flow
+eq(rentFor(own(own3, 1, ['Ramappa'], { houses: 1 }), R) === 1200, 'house rent not doubled');
 
 console.log(errs.length ? errs.join('\n') : 'engine OK');
 process.exit(errs.length ? 1 : 0);

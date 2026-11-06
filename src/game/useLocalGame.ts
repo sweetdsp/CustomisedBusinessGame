@@ -2,6 +2,7 @@
 import { useRef, useState } from 'react';
 import { TIMINGS } from '../shared/design.ts';
 import { newGame, roll, endTurn, buy, decline } from './engine.ts';
+import { build, mortgage, unmortgage, sellBuilding } from './build.ts';
 import type { GameState } from './types.ts';
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -54,5 +55,16 @@ export function useLocalGame(seats: { name: string; token: string }[], startingC
     setState(next); setMessage(next.message);
   }
 
-  return { state, busy, rolling, shownDice, shownPos, message, doRoll, doEndTurn, doBuy, doDecline };
+  // Build, mortgage, unmortgage and sell are allowed any time on your own turn, except while dice or token are moving.
+  function act(fn: (s: GameState) => GameState) {
+    if (busyRef.current) return;
+    const next = fn(state);
+    setState(next); setMessage(next.message);
+  }
+  const doBuild = () => act(build);
+  const doMortgage = (tile: number) => act((s) => mortgage(s, tile));
+  const doUnmortgage = (tile: number) => act((s) => unmortgage(s, tile));
+  const doSell = (tile: number) => act((s) => sellBuilding(s, tile));
+
+  return { state, busy, rolling, shownDice, shownPos, message, doRoll, doEndTurn, doBuy, doDecline, doBuild, doMortgage, doUnmortgage, doSell };
 }

@@ -56,3 +56,10 @@
   .game__players { order: 0; flex-direction: row; flex-wrap: wrap; }
   .game__side { order: 2; }
 }
+
+.places { display: flex; flex-direction: column; gap: var(--space-sm); background: #fff; border: 3px solid var(--gold); border-radius: var(--radius-md); padding: var(--space-sm); max-height: 60vh; overflow-y: auto; }
+.place { border-left: 8px solid var(--ink); padding-left: var(--space-sm); }
+.place.state-TN { border-color: var(--state-tn); } .place.state-KL { border-color: var(--state-kl); }
+.place.state-KA { border-color: var(--state-ka); } .place.state-AP { border-color: var(--state-ap); } .place.state-TG { border-color: var(--state-tg); }
+.place__actions { display: flex; flex-direction: column; gap: 2px; }
+.place__actions .btn { font-size: 15px; padding: 0 var(--space-md); }

@@ -36,6 +36,7 @@ export interface GameState {
   startingCash: number;
   lapSalary: number;
   properties: Record<number, PropertyState>; // keyed by tile index, property tiles only
+  buildTile: number | null; // own place just landed on; the only tile you may build on right now
   lastRoll?: RollResult;
   message: string;
 }

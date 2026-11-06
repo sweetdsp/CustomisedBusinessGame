@@ -15,7 +15,7 @@ export function newGame(seats: { name: string; token: string }[], startingCash: 
   const current = Math.floor(rng() * players.length); // first player chosen at random
   return {
     players, current, phase: 'awaitRoll', doublesCount: 0, extraTurn: false,
-    startingCash, lapSalary: CONSTANTS.LAP_SALARY[startingCash], properties,
+    startingCash, lapSalary: CONSTANTS.LAP_SALARY[startingCash], properties, buildTile: null,
     message: `${players[current].name} goes first`,
   };
 }
@@ -43,7 +43,7 @@ function resolveLanding(state: GameState, seat: number): { state: GameState; not
         if (me.cash >= def!.price) return { state: { ...state, phase: 'awaitBuy' }, note: `${tile.name} is for sale at ${formatRupees(def!.price)}.` };
         return { state, note: `${tile.name} costs ${formatRupees(def!.price)}, more than ${me.name} has. It stays unowned (auctions come in stage 7).` };
       }
-      if (ps.owner === seat) return { state, note: `${tile.name} is yours.` };
+      if (ps.owner === seat) return { state: { ...state, buildTile: tile.index }, note: `${tile.name} is yours. You may build here.` };
       const rent = rentFor(state, tile.index);
       if (rent === 0) return { state, note: `${tile.name} is mortgaged, no rent.` };
       const r = pay(state, seat, ps.owner, rent);
@@ -95,7 +95,7 @@ export function roll(state: GameState, rng: Rng): { state: GameState; result: Ro
     const players = state.players.map((p, i) => (i === seat ? { ...p, position: CONSTANTS.JAIL_TILE, inJail: true } : p));
     return {
       result,
-      state: { ...state, players, phase: 'awaitEnd', doublesCount, extraTurn: false, lastRoll: result, message: `${head} Three doubles: straight to Jail!` },
+      state: { ...state, players, phase: 'awaitEnd', doublesCount, extraTurn: false, lastRoll: result, buildTile: null, message: `${head} Three doubles: straight to Jail!` },
     };
   }
 
@@ -109,7 +109,7 @@ export function roll(state: GameState, rng: Rng): { state: GameState; result: Ro
   const salaryPaid = laps * state.lapSalary;
   const result: RollResult = { dice, total, isDouble, path, salaryPaid, toJail: false };
   const players = state.players.map((p, i) => (i === seat ? { ...p, position: path[path.length - 1], cash: p.cash + salaryPaid } : p));
-  const base: GameState = { ...state, players, phase: 'awaitEnd', doublesCount, extraTurn: isDouble, lastRoll: result };
+  const base: GameState = { ...state, players, phase: 'awaitEnd', doublesCount, extraTurn: isDouble, lastRoll: result, buildTile: null };
   const landed = resolveLanding(base, seat);
   const salary = salaryPaid ? ` Salary +${formatRupees(salaryPaid)}!` : '';
   const dbl = landed.state.extraTurn ? ' Doubles: roll again after ending the turn.' : '';
@@ -141,12 +141,12 @@ export function decline(state: GameState): GameState {
 export function endTurn(state: GameState): GameState {
   if (state.phase !== 'awaitEnd') throw new Error('Cannot end turn yet');
   if (state.extraTurn) {
-    return { ...state, phase: 'awaitRoll', extraTurn: false, message: `${state.players[state.current].name} rolls again!` };
+    return { ...state, phase: 'awaitRoll', extraTurn: false, buildTile: null, message: `${state.players[state.current].name} rolls again!` };
   }
   let next = state.current;
   do next = (next + 1) % state.players.length; while (state.players[next].bankrupt); // skip bankrupt players
   return {
-    ...state, current: next, phase: 'awaitRoll', doublesCount: 0, extraTurn: false,
+    ...state, current: next, phase: 'awaitRoll', doublesCount: 0, extraTurn: false, buildTile: null,
     message: `${state.players[next].name}'s turn`,
   };
 }
