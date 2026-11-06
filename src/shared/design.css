@@ -1,0 +1,42 @@
+/* Mirrors design.ts. Keep both in step; change values in one pass. */
+:root {
+  --state-tn: #1b3a8c;
+  --state-kl: #0f6b3a;
+  --state-ka: #f06ba8;
+  --state-ap: #9b1c1c;
+  --state-tg: #f5c518;
+  --cream: #fff6e0;
+  --gold: #d4a017;
+  --maroon: #5a0f1f;
+  --ink: #2a1a14;
+  --font-display: 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
+  --font-body: 'Nunito', system-ui, sans-serif;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --radius-md: 16px;
+  --radius-pill: 999px;
+  --shadow-soft: 0 4px 12px rgba(90, 15, 31, 0.25);
+  --btn-min-height: 48px;
+  --t-press: 120ms;
+}
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 18px;
+}
+.btn {
+  min-height: var(--btn-min-height);
+  padding: 0 var(--space-lg);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--maroon);
+  color: var(--cream);
+  font: 700 20px var(--font-display);
+  box-shadow: var(--shadow-soft);
+  transition: transform var(--t-press);
+}
+.btn:active:not(:disabled) { transform: scale(0.95); }
+.btn:disabled { opacity: 0.5; }
