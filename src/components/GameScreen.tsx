@@ -85,7 +85,7 @@ export default function GameScreen({ g, onBack }: { g: GameController; onBack: (
       <aside className="game__side">
         <TimerRing seconds={CONSTANTS.TURN_ROLL_SECONDS} total={CONSTANTS.TURN_ROLL_SECONDS} />
         <Button primary={canRoll} icon="🎲" onClick={g.doRoll} disabledReason={rollWhy}>Roll Dice</Button>
-        <Button primary={canBuild} icon="🔨" onClick={g.doBuild} disabledReason={g.busy ? 'Moving...' : overlay ? 'Auction or trade open' : buildCheck.ok ? undefined : buildCheck.reason}>
+        <Button primary={canBuild} icon="🔨" onClick={g.doBuild} disabledReason={g.busy ? 'Moving...' : aiTurn ? `${cur.name} is playing` : overlay ? 'Auction or trade open' : buildCheck.ok ? undefined : buildCheck.reason}>
           {buildCheck.ok ? `Build ${buildCheck.label} ${formatRupees(buildCheck.cost)}` : 'Build'}
         </Button>
         <Button primary={buying} icon="🛒" onClick={g.doBuy} disabledReason={buying ? undefined : 'Land on a place for sale'}>Buy {buying ? formatRupees(price) : ''}</Button>
