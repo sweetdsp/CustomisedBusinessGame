@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "check": "node --experimental-strip-types scripts/check-constants.ts && node --experimental-strip-types scripts/check-board.ts && node --experimental-strip-types scripts/check-engine.ts && node --experimental-strip-types scripts/check-cards.ts && node --experimental-strip-types scripts/check-auction.ts && node --experimental-strip-types scripts/check-endgame.ts && node --experimental-strip-types scripts/check-ai.ts && node --experimental-strip-types scripts/check-server.ts"
+    "check": "node --experimental-strip-types scripts/check-constants.ts && node --experimental-strip-types scripts/check-board.ts && node --experimental-strip-types scripts/check-engine.ts && node --experimental-strip-types scripts/check-cards.ts && node --experimental-strip-types scripts/check-auction.ts && node --experimental-strip-types scripts/check-endgame.ts && node --experimental-strip-types scripts/check-ai.ts && node --experimental-strip-types scripts/check-server.ts",
+    "check:spec": "node --experimental-strip-types scripts/check-spec.ts",
+    "soak": "node --experimental-strip-types scripts/soak.ts",
+    "fuzz": "node --experimental-strip-types scripts/fuzz.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
