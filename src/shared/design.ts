@@ -45,3 +45,6 @@ export function formatRupees(amount: number): string {
 
 // Text color on each state band: dark on pink and yellow, light on the others (section 20.7).
 export const STATE_TEXT_DARK: Record<string, boolean> = { TN: false, KL: false, KA: true, AP: false, TG: true };
+
+// Owner marker colors per seat (never the only cue: the marker also shows the owner's token).
+export const SEAT_COLORS = ['#e4572e', '#17a2b8', '#7b4bb7', '#6c757d'] as const;

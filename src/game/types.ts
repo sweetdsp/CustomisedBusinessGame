@@ -9,7 +9,14 @@ export interface Player {
   bankrupt: boolean;
 }
 
-export type Phase = 'awaitRoll' | 'awaitEnd';
+export type Phase = 'awaitRoll' | 'awaitBuy' | 'awaitEnd';
+
+export interface PropertyState {
+  owner: number | null; // seat index
+  mortgaged: boolean;
+  houses: number; // 0-3; stays 3 when a hotel is added on top
+  hotel: boolean;
+}
 
 export interface RollResult {
   dice: [number, number];
@@ -28,6 +35,7 @@ export interface GameState {
   extraTurn: boolean; // a double was rolled, same player rolls again after End Turn
   startingCash: number;
   lapSalary: number;
+  properties: Record<number, PropertyState>; // keyed by tile index, property tiles only
   lastRoll?: RollResult;
   message: string;
 }

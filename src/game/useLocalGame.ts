@@ -1,9 +1,7 @@
 // Local (same screen) play. The browser stands in for the server only until online play (stage 10).
 import { useRef, useState } from 'react';
 import { TIMINGS } from '../shared/design.ts';
-import { TILES } from '../shared/board.ts';
-import { formatRupees } from '../shared/design.ts';
-import { newGame, roll, endTurn } from './engine.ts';
+import { newGame, roll, endTurn, buy, decline } from './engine.ts';
 import type { GameState } from './types.ts';
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -27,15 +25,12 @@ export function useLocalGame(seats: { name: string; token: string }[], startingC
     await wait(TIMINGS.diceTumble);
     setRolling(false);
     setShownDice(result.dice);
-    setMessage(next.message);
     if (result.toJail) {
       setShownPos(next.players[state.current].position);
-      setMessage(`${mover.name} rolled three doubles: straight to Jail!`);
     } else {
       for (const tile of result.path) { setShownPos(tile); await wait(TIMINGS.tokenHop); }
-      const extra = result.salaryPaid ? ` Salary +${formatRupees(result.salaryPaid)}!` : '';
-      setMessage(`${next.message}. Landed on ${TILES[result.path[result.path.length - 1]].name}.${extra}${result.isDouble ? ' Doubles!' : ''}`);
     }
+    setMessage(next.message);
     setState(next);
     setShownPos(null);
     busyRef.current = false; setBusy(false);
@@ -47,5 +42,17 @@ export function useLocalGame(seats: { name: string; token: string }[], startingC
     setState(next); setMessage(next.message);
   }
 
-  return { state, busy, rolling, shownDice, shownPos, message, doRoll, doEndTurn };
+  function doBuy() {
+    if (busyRef.current || state.phase !== 'awaitBuy') return;
+    const next = buy(state);
+    setState(next); setMessage(next.message);
+  }
+
+  function doDecline() {
+    if (busyRef.current || state.phase !== 'awaitBuy') return;
+    const next = decline(state);
+    setState(next); setMessage(next.message);
+  }
+
+  return { state, busy, rolling, shownDice, shownPos, message, doRoll, doEndTurn, doBuy, doDecline };
 }
