@@ -42,3 +42,6 @@ export const TIMINGS = {
 export function formatRupees(amount: number): string {
   return '₹' + amount.toLocaleString('en-IN');
 }
+
+// Text color on each state band: dark on pink and yellow, light on the others (section 20.7).
+export const STATE_TEXT_DARK: Record<string, boolean> = { TN: false, KL: false, KA: true, AP: false, TG: true };

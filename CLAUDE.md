@@ -9,8 +9,9 @@ Game rules go in pure TS modules (no UI imports) so they can run server-side.
 ## Layout
 - src/shared/constants.ts  all game numbers (single source)
 - src/shared/design.ts + design.css  colors, fonts, spacing, timings
-- src/shared/types.ts
-- scripts/check-constants.ts  sanity check of the price table
+- src/shared/types.ts, board.ts (42 tiles, grid layout)
+- src/components/  Tile, Board, PlayerCard, Button, Banner, GameScreen, board.css, panels.css
+- scripts/check-*.ts  sanity checks (npm run check)
 - src/App.tsx, main.tsx  UI
 
 ## Run
@@ -22,6 +23,6 @@ npm install; npm run dev (local), npm run build, npm run check
 - Never repeat values; use constants.ts and design.ts.
 
 ## Handoff
-- Done: Stage 1 (setup, constants, design file, placeholder home).
-- Next: Stage 2 (board with 42 tiles, colors, main screen layout). Read sections 5, 19, 23, 20.
-- Owner: connect repo to Vercel to deploy.
+- Done: Stages 1-2 (setup, constants, design file, board and screen layout with placeholder art, fake data).
+- Next: Stage 3 (dice, token movement, lap salary, turn order, local play). Read sections 8, 24.
+- Owner: connect repo to Vercel to deploy; review stage 2 look.
