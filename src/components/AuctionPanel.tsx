@@ -11,7 +11,7 @@ interface Props { state: GameState; now: number; canBid: (seat: number) => boole
 export default function AuctionPanel({ state, now, canBid, onBid }: Props) {
   const a = state.auction!;
   const tile = TILES[a.tile];
-  const left = Math.max(0, Math.ceil((a.endsAt - now) / 1000));
+  const left = Math.min(CONSTANTS.AUCTION_SECONDS, Math.max(0, Math.ceil((a.endsAt - now) / 1000))); // never shows more than the full time
   return (
     <div className="auction">
       <div className="auction__top">

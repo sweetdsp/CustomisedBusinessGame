@@ -8,7 +8,7 @@ interface Props { state: GameState; now: number; canAnswer: boolean; onAnswer: (
 // Big message and countdown while a trade waits for an answer.
 export default function TradePanel({ state, now, canAnswer, onAnswer }: Props) {
   const t = state.trade!;
-  const left = Math.max(0, Math.ceil((t.endsAt - now) / 1000));
+  const left = Math.min(CONSTANTS.TRADE_ANSWER_SECONDS, Math.max(0, Math.ceil((t.endsAt - now) / 1000))); // never shows more than the full time
   const from = state.players[t.from], to = state.players[t.to];
   return (
     <div className="auction">

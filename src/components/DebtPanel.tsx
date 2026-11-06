@@ -7,7 +7,7 @@ import TimerRing from './TimerRing.tsx';
 // Shown while a player has to raise money (30 seconds), then bankruptcy.
 export default function DebtPanel({ state, now, canAct, onBankrupt }: { state: GameState; now: number; canAct: boolean; onBankrupt: (seat: number) => void }) {
   const d = state.debt!;
-  const left = Math.max(0, Math.ceil((d.endsAt - now) / 1000));
+  const left = Math.min(CONSTANTS.DEBT_GRACE_SECONDS, Math.max(0, Math.ceil((d.endsAt - now) / 1000))); // never shows more than the full time
   const p = state.players[d.seat];
   const need = debtTotal(state) - p.cash;
   return (

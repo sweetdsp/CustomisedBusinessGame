@@ -23,6 +23,6 @@ npm install; npm run dev; npm run build; npm run check
 - Fix only what the owner reports. Never repeat values; use constants.ts and design.ts.
 
 ## Handoff
-- Done: Stages 1-11 built. Stage 10 online play is tested against an in-memory referee and a local mock, NOT against a live Supabase project (owner must follow SETUP.md).
-- Next: Stage 12 (final testing against the acceptance checklist, section 36) after the owner reviews 7-11.
-- Open decisions made by the builder are listed in the stage 7-11 report to the owner; tune AI numbers in constants.ts.
+- Done: Stages 1-12. Results and decisions are in ACCEPTANCE.md. Extra tests: npm run check:spec (needs SPEC_PATH), soak, fuzz.
+- Not verified from the sandbox: online play on a live Supabase project (SETUP.md) and the real town photos.
+- Next: owner feedback only. Fix only what the owner reports.

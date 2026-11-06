@@ -50,7 +50,7 @@ export default function GameScreen({ g, onBack }: { g: GameController; onBack: (
     state: st,
     count: ownedTiles(state, seat).filter((t) => TILES[t].state === st).length,
   }));
-  const timerLeft = state.turnEndsAt === null ? null : Math.max(0, Math.ceil((state.turnEndsAt - now) / 1000));
+  const timerLeft = state.turnEndsAt === null ? null : Math.min(CONSTANTS.TURN_ROLL_SECONDS, Math.max(0, Math.ceil((state.turnEndsAt - now) / 1000)));
   const price = propertyOf(TILES[cur.position])?.price ?? 0;
   const aiTurn = !mine(state.current);
   const overlay = !!(state.auction || state.trade || state.debt) || aiTurn;
