@@ -1,0 +1,22 @@
+import { TILES, gridCell, propertyOf, CORNER_TILES } from '../src/shared/board.ts';
+import { PROPERTIES } from '../src/shared/constants.ts';
+
+const errs: string[] = [];
+const eq = (c: boolean, m: string) => { if (!c) errs.push(m); };
+eq(TILES.length === 42, '42 tiles');
+eq(TILES.filter((t) => t.kind === 'property').length === 30, '30 properties');
+eq(TILES.every((t) => t.kind !== 'property' || propertyOf(t)?.state === t.state), 'property state/price match');
+eq(PROPERTIES.every((p) => TILES.some((t) => t.name === p.name && t.state === p.state)), 'every priced property on board');
+const names: Record<number, string> = { 0: 'Start', 2: 'Festival', 5: 'Income Tax', 11: 'Jail / Just Visiting', 13: 'Fortune', 17: 'Luxury Tax', 21: 'Rest at the Beach', 22: 'Festival', 26: 'Lucky Draw', 32: 'Go to Jail', 34: 'Tourist Tax', 37: 'Fortune', 41: 'Tirupati', 33: 'Hampi' };
+for (const [i, n] of Object.entries(names)) eq(TILES[+i].name === n, `tile ${i} should be ${n}`);
+const cells = new Set(TILES.map((t) => `${gridCell(t.index).row},${gridCell(t.index).col}`));
+eq(cells.size === 42, 'unique cells');
+const ring = TILES.every((t) => { const c = gridCell(t.index); return c.row === 1 || c.row === 11 || c.col === 1 || c.col === 12; });
+eq(ring, 'all cells on the outer ring');
+eq(JSON.stringify(gridCell(0)) === '{"row":11,"col":12}', 'Start bottom right');
+eq(JSON.stringify(gridCell(11)) === '{"row":11,"col":1}', 'Jail bottom left');
+eq(JSON.stringify(gridCell(21)) === '{"row":1,"col":1}', 'Rest top left');
+eq(JSON.stringify(gridCell(32)) === '{"row":1,"col":12}', 'Go to Jail top right');
+eq(CORNER_TILES.join() === '0,11,21,32', 'corners');
+console.log(errs.length ? errs.join('\n') : 'board OK');
+process.exit(errs.length ? 1 : 0);

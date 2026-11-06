@@ -1,0 +1,10 @@
+-- OPTIONAL but recommended: keeps computers and timers moving even when every browser is closed.
+-- 1. Enable the pg_net extension (Database > Extensions).
+-- 2. Replace the three placeholders, then run this once in the SQL editor.
+select cron.schedule('tick-games', '10 seconds', $$
+  select net.http_post(
+    url := 'https://YOUR-PROJECT-REF.supabase.co/functions/v1/game',
+    headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', 'Bearer YOUR-ANON-KEY', 'x-tick-key', 'YOUR-TICK-KEY'),
+    body := '{"op":"tickAll"}'::jsonb
+  )
+$$);
