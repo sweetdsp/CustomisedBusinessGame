@@ -121,3 +121,16 @@
 .lobby__seat--open { border-style: dashed; opacity: 0.8; }
 .error { color: #a00; font-weight: 700; }
 .lobby__input { min-height: 52px; font: 800 28px var(--font-display); letter-spacing: 4px; text-align: center; border: 3px solid var(--gold); border-radius: var(--radius-md); padding: 0 12px; width: 260px; max-width: 100%; }
+
+.game { grid-template-columns: 270px minmax(0, 1fr) 260px; }
+.game__board { min-width: 0; overflow-x: auto; }
+.pcard__sets { display: flex; flex-wrap: wrap; gap: 3px; margin: 3px 0; }
+.setpill { font: 800 12px var(--font-body); padding: 2px 6px; border-radius: 999px; color: #fff; border: 1px solid rgba(0,0,0,.35); white-space: nowrap; }
+.setpill.state-TN { background: var(--state-tn); } .setpill.state-KL { background: var(--state-kl); }
+.setpill.state-KA { background: var(--state-ka); color: var(--ink); } .setpill.state-AP { background: var(--state-ap); }
+.setpill.state-TG { background: var(--state-tg); color: var(--ink); }
+.turntimer { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.timer { transition: background .2s linear; }
+@media (max-width: 1000px) { .game { grid-template-columns: 1fr; } }
+.credits { columns: 3 160px; list-style: none; padding: 0; margin: 0; }
+.credits a { color: var(--maroon); font-weight: 700; }

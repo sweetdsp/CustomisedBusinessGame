@@ -27,7 +27,7 @@ export function newGame(
     players, current, phase: 'awaitRoll', doublesCount: 0, extraTurn: false,
     startingCash, lapSalary: CONSTANTS.LAP_SALARY[startingCash], properties, buildTile: null, decks: shuffleDecks(rng),
     now: options.now ?? 0, auction: null, auctionQueue: [], trade: null, tradesThisTurn: 0, debt: null,
-    endMode: options.endMode ?? { kind: 'lastStanding' }, startedAt: options.now ?? 0, gameOver: null, turnEndsAt: null, turnTimedOut: false,
+    endMode: options.endMode ?? { kind: 'lastStanding' }, startedAt: options.now ?? 0, gameOver: null, turnEndsAt: (options.now ?? 0) + CONSTANTS.TURN_ROLL_SECONDS * 1000, turnTimedOut: false,
     message: `${players[current].name} goes first`,
   };
 }

@@ -2,7 +2,7 @@
 // Everything here is plain TypeScript with an injected store, clock and random source, so it is tested without any service.
 import { CONSTANTS } from '../shared/constants.ts';
 import { newGame } from '../game/engine.ts';
-import { applyAction, tick, type Action } from '../game/actions.ts';
+import { applyAction, tick, retimer, timeoutAction, type Action } from '../game/actions.ts';
 import { nextComputerMove } from '../game/ai.ts';
 import { passTurn } from '../game/endgame.ts';
 import type { GameState, Rng } from '../game/types.ts';
@@ -44,15 +44,6 @@ function allowedSeats(st: Stored, secret: string): number[] {
   return out;
 }
 const isHost = (st: Stored, secret: string) => secret === st.secrets.host;
-
-// The 10 second turn timer restarts whenever the turn, its phase or an open auction/trade/debt changes.
-function retimer(prev: GameState | null, next: GameState, now: number): GameState {
-  if (next.gameOver) return { ...next, turnEndsAt: null };
-  const changed = !prev || prev.current !== next.current || prev.phase !== next.phase || prev.lastRoll !== next.lastRoll || (prev && overlay(prev) && !overlay(next));
-  if (!changed) return next;
-  const newTurn = !prev || prev.current !== next.current;
-  return { ...next, turnEndsAt: now + ms(CONSTANTS.TURN_ROLL_SECONDS), turnTimedOut: newTurn ? false : next.turnTimedOut };
-}
 
 function earliestDue(s: GameState, now: number): number {
   const times = [s.auction?.endsAt, s.trade?.endsAt, s.debt?.endsAt, s.turnEndsAt].filter((t): t is number => typeof t === 'number');
@@ -200,7 +191,7 @@ async function handleOnce(store: Store, req: Request, d: Deps): Promise<Response
       if (!allowedSeats(st, req.secret).includes(req.seat)) fail('You cannot play for that seat');
       if (state.players[req.seat].replaced) fail('The session is broken and cannot be reconnected');
       const r = applyAction(state, req.seat, req.action as Action, { rng: d.rng, now: d.now });
-      let next = retimer(state, r.state, d.now);
+      let next = r.state;
       // any move by a person clears their missed-turn count
       if (req.action.type !== 'tick') next = { ...next, players: next.players.map((p, i) => (i === req.seat ? { ...p, missedTurns: 0, connected: true } : p)) };
       st.row.state = next;
@@ -264,7 +255,7 @@ async function tickGame(store: Store, gameId: string, d: Deps): Promise<Response
       acted = true;
     } else if (s.turnEndsAt !== null && d.now >= s.turnEndsAt) {
       // 10 seconds up: roll for them, skip optional actions, end the turn
-      const act: Action = s.phase === 'awaitRoll' ? { type: 'roll' } : s.phase === 'awaitBuy' ? { type: 'decline' } : { type: 'endTurn' };
+      const act = timeoutAction(s);
       let missed = cur.missedTurns;
       let timedOut = s.turnTimedOut;
       if (!timedOut) { missed++; timedOut = true; }

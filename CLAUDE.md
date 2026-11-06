@@ -1,6 +1,6 @@
-# Five States Business Game
+# Business Game
 
-Browser board game (towns of 5 southern Indian states). Spec: the owner's Requirements Document.
+Browser board game of popular towns. Spec: the owner's Requirements Document.
 
 ## Stack
 Vite + React + TypeScript on Vercel free tier. Online: Supabase free tier (edge function = referee, Realtime = live updates).
