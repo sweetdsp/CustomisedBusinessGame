@@ -1,10 +1,15 @@
+import { useEffect, useRef, type ReactNode } from 'react';
 import { TILES, gridCell } from '../shared/board.ts';
+import { sound } from '../shared/sound.ts';
 import Tile, { type OwnerView } from './Tile.tsx';
 
-export interface TokenView { seat: number; token: string; position: number; color: string }
+export interface TokenView { seat: number; token: string; position: number; color: string; active: boolean }
 
-// The whole board is the path: 42 large tiles in a 7 by 6 grid (section 5 layout, changed at the owner's request).
-export default function Board({ tokens = [], owners = {} }: { tokens?: TokenView[]; owners?: Record<number, OwnerView> }) {
+// The 42-tile ring (section 5 / 23), with the message centre in the middle.
+export default function Board({ children, tokens = [], owners = {} }: { children?: ReactNode; tokens?: TokenView[]; owners?: Record<number, OwnerView> }) {
+  // a small tick whenever any piece lands on a new tile
+  const last = useRef('');
+  useEffect(() => { const k = tokens.map((t) => t.position).join(','); if (last.current && k !== last.current) sound.hop(); last.current = k; });
   return (
     <div className="board">
       {TILES.map((t) => {
@@ -15,12 +20,18 @@ export default function Board({ tokens = [], owners = {} }: { tokens?: TokenView
             <Tile tile={t} owner={owners[t.index]} />
             {here.length > 0 && (
               <div className="tokens">
-                {here.map((k) => <span key={k.seat} className="token" style={{ background: k.color }} title={`Player ${k.seat + 1}`}>{k.token}</span>)}
+                {here.map((k, n) => (
+                  <span key={k.seat} className={`token ${k.active ? 'token--active' : ''}`} style={{ backgroundColor: k.color, zIndex: 10 + n }} title={`Player ${k.seat + 1}`}>
+                    <span className="token__glyph">{k.token}</span>
+                    <span className="token__num">{k.seat + 1}</span>
+                  </span>
+                ))}
               </div>
             )}
           </div>
         );
       })}
+      <div className="board__center">{children}</div>
     </div>
   );
 }

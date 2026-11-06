@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CONSTANTS } from '../shared/constants.ts';
+import { sound } from '../shared/sound.ts';
 
 // Pip positions on a 3 by 3 face (cells 0-8, left to right, top to bottom) for 0 to 8 dots.
 const PIPS: number[][] = [
@@ -29,6 +30,7 @@ export default function Dice({ values, rolling }: { values: [number, number] | n
   const [flicker, setFlicker] = useState<[number, number]>([1, 2]);
   useEffect(() => {
     if (!rolling) return;
+    sound.dice();
     const id = setInterval(() => {
       const f = () => Math.floor(Math.random() * (CONSTANTS.DICE_MAX_FACE + 1));
       setFlicker([f(), f()]);

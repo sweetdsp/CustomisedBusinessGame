@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Board from './Board.tsx';
-import Stage from './Stage.tsx';
+import CenterPanel from './CenterPanel.tsx';
 import Banner from './Banner.tsx';
 import PlayerCard from './PlayerCard.tsx';
 import Button from './Button.tsx';
@@ -17,7 +17,6 @@ import NetWorthModal from './NetWorthModal.tsx';
 import ResultsScreen from './ResultsScreen.tsx';
 import Effects from './Effects.tsx';
 import MuteButton from './MuteButton.tsx';
-import { speak } from '../shared/sound.ts';
 import type { GameController } from '../game/controller.ts';
 import { CONSTANTS } from '../shared/constants.ts';
 import { TILES, propertyOf } from '../shared/board.ts';
@@ -34,17 +33,13 @@ export default function GameScreen({ g, onBack }: { g: GameController; onBack: (
   const [tradeOpen, setTradeOpen] = useState(false);
   const [worthOpen, setWorthOpen] = useState(false);
   const [confirmSeat, setConfirmSeat] = useState<number | null>(null);
-  // Voice announcements: say every new game message so each player knows what just happened.
-  useEffect(() => {
-    if (g.message && !/is rolling/.test(g.message)) speak(g.message);
-  }, [g.message]);
   if (g.fatal) return <main className="home"><h1>⚠️ Session broken</h1><p>{g.fatal}</p><button className="btn" onClick={onBack}>Back to start</button></main>;
   if (state.gameOver) return <ResultsScreen state={state} onHome={onBack} />;
   const cur = state.players[state.current];
   const deadline = gameDeadline(state);
   const now = g.now;
   const tokens = state.players
-    .map((p, seat) => ({ seat, token: p.token, color: SEAT_COLORS[seat], position: g.shownPos && g.shownPos.seat === seat ? g.shownPos.tile : p.position, bankrupt: p.bankrupt }))
+    .map((p, seat) => ({ seat, token: p.token, color: SEAT_COLORS[seat], active: seat === state.current, position: g.shownPos && g.shownPos.seat === seat ? g.shownPos.tile : p.position, bankrupt: p.bankrupt }))
     .filter((t) => !t.bankrupt);
   const owners = Object.fromEntries(
     Object.entries(state.properties)
@@ -81,16 +76,17 @@ export default function GameScreen({ g, onBack }: { g: GameController; onBack: (
         <PlacesList state={state} disabled={g.busy || !!(state.auction || state.trade) || aiTurn} onMortgage={g.doMortgage} onUnmortgage={g.doUnmortgage} onSell={g.doSell} />
       </aside>
       <div className="game__board">
-        <Stage
-          dice={<Dice values={g.shownDice} rolling={g.rolling} />}
-          side={state.lastCard && !g.busy && !state.auction && !state.trade && !state.debt ? <CardReveal deck={state.lastCard.deck} id={state.lastCard.id} /> : undefined}
-        >
-          {state.debt ? <DebtPanel state={state} now={g.now} canAct={mine(state.debt.seat)} onBankrupt={(seat) => g.act(seat, { type: 'bankrupt' })} />
-            : state.auction ? <AuctionPanel state={state} now={g.now} canBid={mine} onBid={(seat, step) => g.act(seat, { type: 'bid', step })} />
-            : state.trade ? <TradePanel state={state} now={g.now} canAnswer={mine(state.trade.to)} onAnswer={(accept) => g.act(state.trade!.to, { type: 'answerTrade', accept })} />
-            : <Banner>{g.message}</Banner>}
-        </Stage>
-        <Board tokens={tokens} owners={owners} />
+        <Board tokens={tokens} owners={owners}>
+          <CenterPanel>
+            {state.debt ? <DebtPanel state={state} now={g.now} canAct={mine(state.debt.seat)} onBankrupt={(seat) => g.act(seat, { type: 'bankrupt' })} />
+              : state.auction ? <AuctionPanel state={state} now={g.now} canBid={mine} onBid={(seat, step) => g.act(seat, { type: 'bid', step })} />
+              : state.trade ? <TradePanel state={state} now={g.now} canAnswer={mine(state.trade.to)} onAnswer={(accept) => g.act(state.trade!.to, { type: 'answerTrade', accept })} />
+              : (<>
+                <Banner>{g.message}</Banner>
+                {state.lastCard && !g.busy ? <CardReveal deck={state.lastCard.deck} id={state.lastCard.id} /> : <Dice values={g.shownDice} rolling={g.rolling} />}
+              </>)}
+          </CenterPanel>
+        </Board>
       </div>
       <aside className="game__side">
         {timerLeft !== null && !cur.ai && !state.auction && !state.trade && !state.debt && (

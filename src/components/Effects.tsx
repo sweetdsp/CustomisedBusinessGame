@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { TIMINGS } from '../shared/design.ts';
+import { sound } from '../shared/sound.ts';
 import type { GameState } from '../game/types.ts';
 
 interface Particle { id: number; kind: 'confetti' | 'coin'; x: number; y: number; dx: number; dy: number; glyph: string; delay: number }
@@ -24,7 +25,9 @@ export default function Effects({ state }: { state: GameState }) {
       if (before.owner === null && ps.owner !== null) {
         const c = centre(document.querySelector(`[data-tile="${k}"]`));
         if (c) for (let i = 0; i < 14; i++) add.push({ id: uid++, kind: 'confetti', x: c.x, y: c.y, dx: (Math.random() - 0.5) * 220, dy: -40 - Math.random() * 160, glyph: CONFETTI[i % CONFETTI.length], delay: Math.random() * 0.15 });
+        sound.buy();
       }
+      if (ps.houses > before.houses || (ps.hotel && !before.hotel)) sound.build();
     }
     // Money moving between two players: coins fly from payer to receiver
     const diffs = state.players.map((pl, i) => pl.cash - p.players[i].cash);
@@ -32,8 +35,11 @@ export default function Effects({ state }: { state: GameState }) {
     if (from >= 0 && to >= 0 && diffs.filter((d) => d !== 0).length === 2) {
       const a = centre(document.querySelector(`[data-seat="${from}"]`)), b = centre(document.querySelector(`[data-seat="${to}"]`));
       if (a && b) for (let i = 0; i < 6; i++) add.push({ id: uid++, kind: 'coin', x: a.x, y: a.y, dx: b.x - a.x, dy: b.y - a.y, glyph: '₹', delay: i * 0.08 });
+      sound.coin();
     }
-        if (add.length) {
+    if (state.lastCard && state.lastCard.id !== p.lastCard?.id) sound.card();
+    if (state.gameOver && !p.gameOver) sound.win();
+    if (add.length) {
       setParts((cur) => [...cur, ...add]);
       const ids = new Set(add.map((a) => a.id));
       setTimeout(() => setParts((cur) => cur.filter((c) => !ids.has(c.id))), TIMINGS.celebrate + 800);

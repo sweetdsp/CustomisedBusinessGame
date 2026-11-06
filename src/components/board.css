@@ -1,100 +1,106 @@
-/* ---- Board: 42 large tiles in a 7 by 6 grid ---- */
+/* ---- Board: the 42-tile ring with the message centre ---- */
 .board {
   container-type: inline-size;
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: repeat(6, 1fr);
-  aspect-ratio: 7 / 6;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(11, 1fr);
+  aspect-ratio: 12 / 11;
   width: 100%;
-  max-width: calc((100vh - 190px) * 7 / 6);
-  min-width: 560px;
+  max-width: calc((100vh - 24px) * 12 / 11);
   margin: 0 auto;
   padding: 6px;
-  gap: 4px;
+  gap: 2px;
   box-sizing: border-box;
   background:
+    radial-gradient(circle at 20% 15%, rgba(255,255,255,.18), transparent 40%),
     repeating-linear-gradient(45deg, rgba(212,160,23,.14) 0 6px, transparent 6px 12px),
     linear-gradient(135deg, var(--maroon), #8a1c34);
   border: 4px solid var(--gold);
   border-radius: var(--radius-md);
   box-shadow: 0 14px 30px rgba(90,15,31,.45), inset 0 0 0 3px rgba(255,235,170,.5);
+  outline: 3px dashed var(--gold);
+  outline-offset: -12px;
 }
 .board__cell { position: relative; min-width: 0; min-height: 0; }
+.board__center { grid-row: 2 / 11; grid-column: 2 / 12; min-width: 0; min-height: 0; }
 
+/* ---- Tiles: colour band, picture (a real photo for towns), name, price ---- */
 .tile {
-  position: relative; height: 100%; box-sizing: border-box; overflow: hidden;
-  border-radius: 6px; background: linear-gradient(180deg, #fffdf6, var(--cream));
-  color: var(--ink); text-align: center; font-size: clamp(8px, 1.45cqw, 17px); line-height: 1.1;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 1px 3px rgba(0,0,0,.35);
+  position: relative; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  overflow: hidden; border-radius: 4px; text-align: center; line-height: 1.05; color: var(--ink);
+  background: linear-gradient(180deg, #fffdf6 0%, var(--cream) 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 1px 2px rgba(0,0,0,.25);
+  font-size: clamp(6px, 1.1cqw, 14px);
 }
-.tile__photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.tile__band {
-  position: absolute; inset: 0 0 auto 0; height: 16%; z-index: 2; display: flex; align-items: center; justify-content: center;
-  font-weight: 800; letter-spacing: .12em; font-size: 0.8em; color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,.35);
-}
+.tile__band { flex: none; width: 100%; height: 16%; }
+.tile__photo { flex: 1 1 0; min-height: 0; width: 100%; object-fit: cover; }
+.tile__icon { flex: 1 1 0; min-height: 0; display: grid; place-items: center; font-size: 2.2em; filter: drop-shadow(0 1px 1px rgba(0,0,0,.3)); }
+.tile__name { flex: none; width: 100%; font-weight: 800; padding: 1px 2px 0; }
+.tile__price { flex: none; font-weight: 700; padding-bottom: 2px; }
+.tile--corner { background: linear-gradient(135deg, #ffe9a8, var(--gold)); font-size: clamp(7px, 1.3cqw, 16px); }
+.tile--corner .tile__icon { font-size: 2.6em; }
+.tile--fortune, .tile--festival, .tile--luckyDraw { background: #ffe1ec; }
+.tile--incomeTax, .tile--luxuryTax, .tile--touristTax { background: #e8e1d3; }
 .state-TN .tile__band { background: var(--state-tn); } .state-KL .tile__band { background: var(--state-kl); }
-.state-KA .tile__band { background: var(--state-ka); color: var(--ink); } .state-AP .tile__band { background: var(--state-ap); }
-.state-TG .tile__band { background: var(--state-tg); color: var(--ink); }
-.tile--property { background: linear-gradient(160deg, #e9dcc0, #bfa97c); }
-.tile__label {
-  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 14% 14% 4%;
-  background: linear-gradient(transparent, rgba(0,0,0,.78)); color: #fff; text-shadow: 0 1px 2px #000;
-}
-.tile__name { font-weight: 800; font-size: 1.05em; }
-.tile__price { font-weight: 700; font-size: 0.95em; color: #ffe08a; }
-.tile__icon { position: absolute; inset: 0; display: grid; place-items: center; font-size: 4.2em; padding-bottom: 22%; filter: drop-shadow(0 2px 2px rgba(0,0,0,.3)); }
-.tile--corner { background: linear-gradient(135deg, #ffe9a8, var(--gold)); }
-.tile--corner .tile__label { background: none; color: var(--maroon); text-shadow: none; }
-.tile--fortune, .tile--festival, .tile--luckyDraw { background: linear-gradient(160deg, #ffe1ec, #f6a8c4); }
-.tile--incomeTax, .tile--luxuryTax, .tile--touristTax { background: linear-gradient(160deg, #eee7d8, #cfc4a8); }
-.tile:not(.tile--property) .tile__label { background: none; color: var(--maroon); text-shadow: none; }
-.tile__flow { position: absolute; right: 3%; bottom: 3%; z-index: 3; font-size: 1.1em; font-weight: 800; color: rgba(255,255,255,.9); text-shadow: 0 1px 2px #000; }
-.tile:not(.tile--property) .tile__flow { color: var(--maroon); text-shadow: none; }
-.tile__owner { position: absolute; top: 18%; right: 3%; z-index: 4; font-size: 1.9em; line-height: 1; padding: 0.12em 0.22em; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.5); animation: popin 0.45s cubic-bezier(.2,1.6,.4,1); }
-.tile__buildings { position: absolute; left: 3%; top: 20%; z-index: 4; font-size: 1.5em; line-height: 1; text-shadow: 0 1px 3px #000; }
-.tile--mortgaged { filter: grayscale(0.85); opacity: 0.85; }
-.tile__lock { position: absolute; top: 45%; left: 0; right: 0; z-index: 4; background: rgba(0,0,0,.7); color: #fff; font-weight: 800; }
+.state-KA .tile__band { background: var(--state-ka); } .state-AP .tile__band { background: var(--state-ap); }
+.state-TG .tile__band { background: var(--state-tg); }
+.tile__owner { position: absolute; top: 18%; right: 2px; z-index: 4; font-size: 1.6em; line-height: 1; padding: 0.1em 0.2em; border-radius: 50%; border: 1.5px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.5); animation: popin 0.45s cubic-bezier(.2,1.6,.4,1); }
+.tile__buildings { position: absolute; left: 2px; top: 20%; z-index: 4; font-size: 1.3em; line-height: 1; text-shadow: 0 1px 2px #000; animation: construct 0.6s ease-out; }
+.tile--mortgaged { filter: grayscale(0.85); opacity: 0.8; }
+.tile__lock { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.65); color: #fff; font-size: 0.85em; font-weight: 800; z-index: 5; }
+@keyframes construct { 0% { transform: translateY(-60%) scale(0.3); opacity: 0; } 55% { transform: translateY(0) scale(1.35); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes popin { 0% { transform: scale(0); } 100% { transform: scale(1); } }
 
-/* Player pieces: big coloured discs that stand out from the photos */
-.tokens { position: absolute; left: 0; right: 0; top: 24%; z-index: 6; display: flex; justify-content: center; pointer-events: none; }
+/* ---- Player pieces: big 3D coins in each player's colour, clearly apart from the tiles ---- */
+.tokens { position: absolute; left: 50%; top: 36%; transform: translate(-50%, -50%); z-index: 20; display: flex; align-items: center; justify-content: center; pointer-events: none; }
 .token {
-  display: grid; place-items: center; width: 4.6cqw; height: 4.6cqw; min-width: 30px; min-height: 30px; margin: 0 -0.7cqw;
-  font-size: 2.7cqw; border-radius: 50%; border: 0.35cqw solid #fff;
-  box-shadow: 0 0 0 0.25cqw #111, 0 4px 8px rgba(0,0,0,.6); animation: hop var(--t-hop, 250ms) ease-out;
+  position: relative; display: grid; place-items: center; flex: none;
+  width: 5.6cqw; height: 5.6cqw; min-width: 40px; min-height: 40px; margin: 0 -1.3cqw; border-radius: 50%;
+  border: 0.45cqw solid #fff;
+  background-image: radial-gradient(circle at 34% 26%, rgba(255,255,255,.7), rgba(255,255,255,0) 52%), radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 60%, rgba(0,0,0,.35) 100%);
+  box-shadow: 0 0 0 0.3cqw #111, 0 1cqw 1.4cqw rgba(0,0,0,.7), inset 0 -0.5cqw 0.7cqw rgba(0,0,0,.3);
+  animation: hop var(--t-hop, 250ms) ease-out;
 }
+.token__glyph { font-size: 3.1cqw; line-height: 1; filter: drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
+.token__num { position: absolute; right: -0.9cqw; bottom: -0.9cqw; min-width: 16px; min-height: 16px; width: 2.2cqw; height: 2.2cqw; display: grid; place-items: center; border-radius: 50%; background: #111; color: #fff; border: 2px solid #fff; font: 800 clamp(10px, 1.4cqw, 16px) var(--font-body); }
+.token--active { animation: hop var(--t-hop, 250ms) ease-out, glow 1.2s ease-in-out 0.25s infinite; }
 @keyframes hop { 0% { transform: translateY(0); } 40% { transform: translateY(-60%) scale(1.2); } 100% { transform: translateY(0); } }
+@keyframes glow { 0%, 100% { box-shadow: 0 0 0 0.3cqw #111, 0 1cqw 1.4cqw rgba(0,0,0,.7), 0 0 0 0.5cqw rgba(255,215,94,.0); } 50% { box-shadow: 0 0 0 0.3cqw #111, 0 1cqw 1.4cqw rgba(0,0,0,.7), 0 0 1.6cqw 0.9cqw rgba(255,215,94,.95); } }
 
-/* ---- Stage (above the board): dice, banner, panels ---- */
-.stage { container-type: inline-size; display: flex; align-items: center; gap: 2cqw; width: 100%; max-width: calc((100vh - 190px) * 7 / 6); min-width: 560px; margin: 0 auto 8px; min-height: 110px; padding: 8px 12px; box-sizing: border-box; background: linear-gradient(180deg, #fff8e6, #ffe9b4); border: 3px solid var(--gold); border-radius: var(--radius-md); box-shadow: var(--shadow-soft); }
-.stage__main { flex: 1; min-width: 0; display: flex; justify-content: center; }
-.stage__side { flex: none; }
-.dice { display: flex; gap: 1.6cqw; }
-.die { width: 9cqw; height: 9cqw; max-width: 84px; max-height: 84px; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); padding: 1.1cqw; background: #fff; border: 0.3cqw solid var(--maroon); border-radius: 1.6cqw; box-shadow: var(--shadow-soft); box-sizing: border-box; }
+/* ---- Centre of the board: banner, dice, cards, panels ---- */
+.center { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2cqw; border-radius: 8px; background: radial-gradient(circle at 50% 35%, #fffaf0, #ffd98a 65%, #f2b45a); overflow: hidden; position: relative; }
+.center__title { margin: 0; font: 800 4cqw var(--font-display); color: var(--maroon); }
+.center__stage { display: flex; flex-direction: column; align-items: center; gap: 1.5cqw; width: 100%; }
+.banner { padding: 1.2cqw 4cqw; border-radius: var(--radius-pill); background: var(--maroon); color: var(--cream); border: 3px solid var(--gold); font: 800 3.2cqw var(--font-display); box-shadow: var(--shadow-soft); max-width: 94%; text-align: center; }
+
+.dice { display: flex; gap: 2cqw; }
+.die { width: 8cqw; height: 8cqw; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); padding: 1cqw; background: #fff; border: 0.3cqw solid var(--maroon); border-radius: 1.5cqw; box-shadow: var(--shadow-soft); box-sizing: border-box; }
 .die__pip { width: 78%; height: 78%; align-self: center; justify-self: center; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #c0392b, var(--maroon)); }
-.die--blank { color: var(--maroon); font: 800 3cqw var(--font-display); place-items: center; }
+.die--blank { color: var(--maroon); font: 800 3.4cqw var(--font-display); place-items: center; }
 .die--tumble { animation: tumble 0.45s linear infinite; }
 .die--settle { animation: settle 0.35s ease-out; }
 @keyframes tumble { 0% { transform: rotate(0) translateY(0); } 50% { transform: rotate(180deg) translateY(-1.5cqw); } 100% { transform: rotate(360deg) translateY(0); } }
 @keyframes settle { 0% { transform: scale(1.3) rotate(-15deg); } 60% { transform: scale(0.92); } 100% { transform: scale(1); } }
-.banner { padding: 1cqw 3cqw; border-radius: var(--radius-pill); background: var(--maroon); color: var(--cream); border: 3px solid var(--gold); font: 800 2.6cqw var(--font-display); box-shadow: var(--shadow-soft); }
-.cardreveal { width: 34cqw; padding: 1cqw 1.6cqw; border-radius: 1.4cqw; border: 0.35cqw solid var(--gold); box-shadow: var(--shadow-soft); text-align: center; animation: flip var(--t-card-flip, 700ms) ease-out; }
-.cardreveal--fortune { background: #ffe1ec; color: var(--maroon); } .cardreveal--festival { background: #fff0b8; color: var(--maroon); }
-.cardreveal__head { font: 800 2cqw var(--font-display); } .cardreveal__text { font-size: 1.7cqw; line-height: 1.2; font-weight: 700; margin-top: 0.3cqw; }
-@keyframes flip { 0% { transform: perspective(60cqw) rotateY(90deg); } 100% { transform: perspective(60cqw) rotateY(0); } }
-@media (prefers-reduced-motion: reduce) { .die--tumble, .die--settle, .token, .cardreveal { animation: none; } }
 
-/* ---- Stage 11: polish ---- */
+.cardreveal { width: 46cqw; padding: 1.2cqw 2cqw; border-radius: 1.6cqw; border: 0.4cqw solid var(--gold); box-shadow: var(--shadow-soft); text-align: center; animation: flip var(--t-card-flip, 700ms) ease-out; }
+.cardreveal--fortune { background: #ffe1ec; color: var(--maroon); } .cardreveal--festival { background: #fff0b8; color: var(--maroon); }
+.cardreveal__head { font: 800 2.2cqw var(--font-display); } .cardreveal__text { font-size: 1.9cqw; line-height: 1.2; font-weight: 700; margin-top: 0.4cqw; }
+@keyframes flip { 0% { transform: perspective(60cqw) rotateY(90deg); } 100% { transform: perspective(60cqw) rotateY(0); } }
+
+/* ---- Celebrations and flying rent coins ---- */
 .fx { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
 .fx__p { position: absolute; font-size: 26px; transform: translate(-50%, -50%); opacity: 0; }
 .fx__p--confetti { animation: burst 1.5s ease-out forwards; }
 .fx__p--coin { animation: coinfly 0.9s ease-in-out forwards; }
 @keyframes burst { 0% { opacity: 1; transform: translate(-50%, -50%) scale(0.6); } 100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 80px)) rotate(240deg) scale(1.2); } }
 @keyframes coinfly { 0% { opacity: 1; transform: translate(-50%, -50%) scale(0.8); } 90% { opacity: 1; } 100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.1); } }
+.coin { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; font: 800 26px var(--font-display); color: #5a3a00; background: radial-gradient(circle at 35% 30%, #fff1a8, #f2b705 60%, #b07d00); border: 4px solid #222; box-shadow: 0 0 0 3px #fff, 0 4px 10px rgba(0,0,0,.6); }
 
-.tile__buildings { animation: construct 0.6s ease-out; }
-@keyframes construct { 0% { transform: translateY(-60%) scale(0.3); opacity: 0; } 55% { transform: translateY(0) scale(1.35); opacity: 1; } 100% { transform: scale(1); } }
-@keyframes popin { 0% { transform: scale(0); } 100% { transform: scale(1); } }
-
+/* ---- Misc polish ---- */
+@media (max-width: 700px) {
+  .game__board { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .board { min-width: 680px; }
+  .game__side .btn, .game__players .btn { width: 100%; }
+}
 .mute { position: fixed; top: 8px; right: 8px; z-index: 70; width: 48px; height: 48px; border-radius: 50%; border: 3px solid var(--gold); background: var(--cream); font-size: 24px; box-shadow: var(--shadow-soft); cursor: pointer; }
 .btn { background: linear-gradient(#7a1a30, var(--maroon)); border: 2px solid var(--gold); text-shadow: 0 1px 0 rgba(0,0,0,.4); cursor: pointer; }
 .btn--glow { background: linear-gradient(#ffd75e, var(--gold)); }
@@ -103,7 +109,4 @@
 @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.2) rotate(4deg); } }
 .podium__step { animation: rise 0.9s ease-out; transform-origin: bottom; }
 @keyframes rise { from { transform: scaleY(0.1); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .fx__p, .tile__buildings, .tile__owner, .results__fireworks, .podium__step { animation: none; } }
-
-/* Flying rent coins: big gold discs with a dark outline so they stand apart from the board */
-.coin { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; font: 800 26px var(--font-display); color: #5a3a00; background: radial-gradient(circle at 35% 30%, #fff1a8, #f2b705 60%, #b07d00); border: 4px solid #222; box-shadow: 0 0 0 3px #fff, 0 4px 10px rgba(0,0,0,.6); }
+@media (prefers-reduced-motion: reduce) { .die--tumble, .die--settle, .token, .cardreveal, .fx__p, .tile__buildings, .tile__owner, .results__fireworks, .podium__step { animation: none; } }
